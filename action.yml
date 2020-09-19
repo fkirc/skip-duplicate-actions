@@ -10,4 +10,8 @@ outputs:
     description: 'The time we greeted you'
 runs:
   using: 'node12'
+  pre: 'pre-step.js'
+  pre-if: 'always()'
   main: 'index.js'
+  post: 'upload-success.js'
+  post-if: 'success()'
