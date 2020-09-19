@@ -1,16 +1,8 @@
 on: [push]
 
 jobs:
-  hello_world_job:
+  local_test_job:
     runs-on: ubuntu-latest
-    name: A job to say hello
     steps:
-      - name: Hello world action step
-        id: hello
-        uses: fkirc/skip-duplicate-action-runs@master
-        with:
-          who-to-greet: 'Mona the Octocat'
-          github-token: '${{ secrets.GITHUB_TOKEN }}'
-      # Use the output from the `hello` step
-      - name: Get the output time
-        run: echo "The time was ${{ steps.hello.outputs.time }}"
+      - uses: fkirc/skip-duplicate-action-runs@master
+      - run: pwd && ls -la
