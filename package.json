@@ -1,0 +1,24 @@
+{
+  "name": "skip-duplicate-action-runs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fkirc/skip-duplicate-action-runs.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/fkirc/skip-duplicate-action-runs/issues"
+  },
+  "homepage": "https://github.com/fkirc/skip-duplicate-action-runs#readme",
+  "dependencies": {
+    "@actions/core": "^1.2.5",
+    "@actions/github": "^4.0.0"
+  }
+}
