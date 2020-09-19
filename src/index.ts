@@ -9,7 +9,7 @@ if (!core) {
 
 async function main() {
   if (github.context.eventName === 'workflow_dispatch') {
-    return console.info("Do not skip workflow because it was triggered with workflow_dispatch");
+    return console.info("Do not skip execution because the workflow was triggered with workflow_dispatch.");
   }
 
   const currentTreeHash: string = github.context.payload.head_commit.tree_id;
@@ -39,7 +39,7 @@ async function main() {
   });
   const currentWorkflowId = current_run.workflow_id;
   if (!currentWorkflowId) {
-    logFatal("Did not find current workflow id");
+    logFatal("Did not find the current workflow id");
   }
 
   const { data } = await octokit.actions.listWorkflowRuns({
