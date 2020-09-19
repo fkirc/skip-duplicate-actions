@@ -5761,7 +5761,7 @@ async function main() {
     if (!token) {
         logFatal("Did not find github_token");
     }
-    const octokit = github.getOctokit("jfiosefjsiofjs");
+    const octokit = github.getOctokit(token);
     const { owner, repo } = github.context.payload;
     const { data } = await octokit.actions.listWorkflowRunsForRepo({
         owner,
