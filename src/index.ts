@@ -1,20 +1,30 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-
 if (!github) {
   throw new Error('Module not found: github');
 }
-
 if (!core) {
   throw new Error('Module not found: core');
 }
 
+export function logFatal(msg: string): never {
+  core.setFailed(`error: ${msg}`);
+  return process.exit(1) as never;
+}
+
 async function main() {
+  logFatal("log fatal test") as undefined;
   const { eventName, sha, ref, repo: { owner, repo }, payload } = github.context;
   const { GITHUB_RUN_ID } = process.env;
   console.log(github.context); // TODO: Remove
   if (eventName === 'workflow_dispatch') {
     console.info("Do not skip workflow because it was triggered with workflow_dispatch");
+    return;
+  }
+  const headCommit = github.context.payload.head_commit;
+  const treeHash = headCommit.tree_id;
+  if (!treeHash) {
+    core.setFailed("Could not find tree hash of head commit");
     return;
   }
 
