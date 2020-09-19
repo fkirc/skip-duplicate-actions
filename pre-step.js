@@ -1,1 +1,1 @@
-console.log("Run pre-step");
+console.info("Run pre-step");

@@ -1,1 +1,1 @@
-console.log(`Run upload-success`);
+console.info(`Run upload-success`);
