@@ -5749,10 +5749,8 @@ function logFatal(msg) {
 }
 exports.logFatal = logFatal;
 async function main() {
-    const { eventName, sha, ref, repo: { owner, repo }, payload } = github.context;
-    const { GITHUB_RUN_ID } = process.env;
     console.log(github.context);
-    if (eventName === 'workflow_dispatch') {
+    if (github.context.eventName === 'workflow_dispatch') {
         return console.info("Do not skip workflow because it was triggered with workflow_dispatch");
     }
     const headCommit = github.context.payload.head_commit;
@@ -5761,60 +5759,27 @@ async function main() {
         logFatal("Could not find tree hash of head commit");
     }
     console.log("Found tree hash", treeHash);
-    let branch = ref.slice(11);
-    let headSha = sha;
-    if (payload.pull_request) {
-        branch = payload.pull_request.head.ref;
-        headSha = payload.pull_request.head.sha;
-    }
-    console.log({ eventName, sha, headSha, branch, owner, repo, GITHUB_RUN_ID });
     const token = core.getInput('github_token', { required: true });
-    const workflow_id = core.getInput('workflow_id', { required: false });
-    console.log(`Found token: ${token ? 'yes' : 'no'}`);
-    const workflow_ids = [];
+    if (!token) {
+        logFatal("Did not find github_token");
+    }
     const octokit = github.getOctokit(token);
+    const { owner, repo } = github.context.payload;
     const { data: current_run } = await octokit.actions.getWorkflowRun({
         owner,
         repo,
-        run_id: Number(GITHUB_RUN_ID)
+        run_id: Number(process.env.GITHUB_RUN_ID)
     });
-    if (workflow_id) {
-        workflow_id.replace(/\s/g, '')
-            .split(',')
-            .map(s => Number(s))
-            .forEach(n => workflow_ids.push(n));
-    }
-    else {
-        workflow_ids.push(current_run.workflow_id);
-    }
-    console.log(`Found workflow_id: ${JSON.stringify(workflow_ids)}`);
-    await Promise.all(workflow_ids.map(async (workflow_id) => {
-        try {
-            const { data } = await octokit.actions.listWorkflowRuns({
-                owner,
-                repo,
-                workflow_id,
-                branch
-            });
-            console.log(`Found ${data.total_count} runs total.`);
-            const runningWorkflows = data.workflow_runs.filter(run => run.head_branch === branch && run.head_sha !== headSha && run.status !== 'completed' &&
-                new Date(run.created_at) < new Date(current_run.created_at));
-            console.log(`Found ${runningWorkflows.length} runs in progress.`);
-            for (const { id, head_sha, status } of runningWorkflows) {
-                console.log('Cancelling another run: ', { id, head_sha, status });
-                const res = await octokit.actions.cancelWorkflowRun({
-                    owner,
-                    repo,
-                    run_id: id
-                });
-                console.log(`Cancel run ${id} responded with status ${res.status}`);
-            }
-        }
-        catch (e) {
-            const msg = e.message || e;
-            console.log(`Error while cancelling workflow_id ${workflow_id}: ${msg}`);
-        }
-    }));
+    const currentWorkflowId = current_run.workflow_id;
+    console.log(`Found current workflow_id: ${currentWorkflowId}`);
+    const { data } = await octokit.actions.listWorkflowRuns({
+        owner,
+        repo,
+        workflow_id: currentWorkflowId,
+    });
+    console.log(`Found ${data.total_count} runs total.`, data);
+    const successfulWorkflows = data.workflow_runs.filter(run => run.status === 'completed' && run.conclusion === 'success');
+    console.log(`Found ${successfulWorkflows.length} successful runs.`, successfulWorkflows);
 }
 main().catch((e) => {
     console.error(e);
