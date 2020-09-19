@@ -10,6 +10,11 @@ try {
     // Get the JSON webhook payload for the event that triggered the workflow
     const context = JSON.stringify(github.context, undefined, 2)
     console.log(`The event context: ${context}`);
+    const headCommit = github.context.payload.head_commit;
+    const treeHash = headCommit.tree_id;
+    const commitUrl = headCommit.url;
+    console.info(`Tree hash: ${treeHash}`);
+    console.info(`Commit URL: ${commitUrl}`);
 } catch (error) {
     core.setFailed(error.message);
 }
