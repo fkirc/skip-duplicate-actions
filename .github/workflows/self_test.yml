@@ -1,4 +1,4 @@
-on: [push] # TODO: Test workflow_dispatch
+on: [push, workflow_dispatch]
 
 jobs:
   self_test:
