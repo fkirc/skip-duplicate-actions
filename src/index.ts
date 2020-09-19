@@ -51,10 +51,11 @@ async function main() {
   const { data } = await octokit.actions.listWorkflowRunsForRepo({
     owner: repoOwner,
     repo: repoName,
-    status: "success" as unknown as any,
+    //status: "success" as unknown as any,
+    per_page: 99
     //workflow_id: currentWorkflowId,
   });
-  console.log(`Found ${data.total_count} runs total.`, data);
+  console.log(`Found ${data.workflow_runs.length} runs total.`, data);
   const successfulRuns = data.workflow_runs.filter((run) => {
     // TODO: Check if belongs to same workflow.
     return run.status === 'completed' && run.conclusion === 'success'
