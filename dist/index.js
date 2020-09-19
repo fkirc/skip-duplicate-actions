@@ -5736,12 +5736,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__webpack_require__(186));
 const github = __importStar(__webpack_require__(438));
-if (!github) {
-    throw new Error('Module not found: github');
-}
-if (!core) {
-    throw new Error('Module not found: core');
-}
 async function main() {
     var _a;
     if (github.context.eventName === 'workflow_dispatch') {

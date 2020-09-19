@@ -5,6 +5,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: fkirc/skip-duplicate-action-runs@master
+        id: skip
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-      - run: pwd && ls -la
+      - run: echo "Follow-up step"
+        if: ${{ ! steps.skip.outputs.is_duplicate }}

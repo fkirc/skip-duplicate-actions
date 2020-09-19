@@ -1,11 +1,5 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-if (!github) {
-  throw new Error('Module not found: github');
-}
-if (!core) {
-  throw new Error('Module not found: core');
-}
 
 async function main() {
   if (github.context.eventName === 'workflow_dispatch') {

@@ -1,5 +1,5 @@
 name: 'Skip Duplicate Action Runs'
-description: 'This Action will skip workflows that have been successfully executed before with the exact same files.'
+description: 'This Action will detect older workflow-runs that have been successfully executed with the exact same files.'
 author: fkirc
 branding:
   icon: 'stop-circle'
@@ -8,6 +8,9 @@ inputs:
   github_token:
     description: 'Your GitHub Access Token, ie: {{ github.token }}'
     required: true
+outputs:
+  is_duplicate:
+    description: 'True if a successful older workflow-run with the exact same files has been found.'
 runs:
   using: 'node12'
   main: 'dist/index.js'
