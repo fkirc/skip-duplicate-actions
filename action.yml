@@ -6,7 +6,7 @@ inputs:
     required: true
     default: 'World'
   github-token:
-    description: 'Set to ${{ secrets.GITHUB_TOKEN }}'
+    description: 'secrets.GITHUB_TOKEN'
     required: true
 outputs:
   time: # id of output
