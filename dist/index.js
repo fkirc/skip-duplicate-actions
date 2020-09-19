@@ -5744,25 +5744,23 @@ if (!core) {
     throw new Error('Module not found: core');
 }
 function logFatal(msg) {
-    core.setFailed(`error: ${msg}`);
+    core.setFailed(msg);
     return process.exit(1);
 }
 exports.logFatal = logFatal;
 async function main() {
-    logFatal("log fatal test");
     const { eventName, sha, ref, repo: { owner, repo }, payload } = github.context;
     const { GITHUB_RUN_ID } = process.env;
     console.log(github.context);
     if (eventName === 'workflow_dispatch') {
-        console.info("Do not skip workflow because it was triggered with workflow_dispatch");
-        return;
+        return console.info("Do not skip workflow because it was triggered with workflow_dispatch");
     }
     const headCommit = github.context.payload.head_commit;
     const treeHash = headCommit.tree_id;
     if (!treeHash) {
-        core.setFailed("Could not find tree hash of head commit");
-        return;
+        logFatal("Could not find tree hash of head commit");
     }
+    console.log("Found tree hash", treeHash);
     let branch = ref.slice(11);
     let headSha = sha;
     if (payload.pull_request) {
