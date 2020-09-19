@@ -51,7 +51,7 @@ async function main() {
   const { data } = await octokit.actions.listWorkflowRunsForRepo({
     owner: repoOwner,
     repo: repoName,
-    //status: "success" as unknown as any,
+    status: "success" as unknown as any,
     per_page: 99
     //workflow_id: currentWorkflowId,
   });
