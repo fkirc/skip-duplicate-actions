@@ -1,20 +1,13 @@
-name: 'Hello World'
-description: 'Greet someone and record the time'
+name: 'Skip Duplicate Action Runs'
+description: 'This Action will skip workflows that have been successfully executed before with the exact same files.'
+author: fkirc
+branding:
+  icon: 'stop-circle'
+  color: 'white'
 inputs:
-  who-to-greet:  # id of input
-    description: 'Who to greet'
+  github_token:
+    description: 'Your GitHub Access Token, ie: {{ github.token }}'
     required: true
-    default: 'World'
-  github-token:
-    description: 'secrets.GITHUB_TOKEN'
-    required: true
-outputs:
-  time: # id of output
-    description: 'The time we greeted you'
 runs:
   using: 'node12'
-  pre: 'pre-step.js'
-  pre-if: 'always()'
-  main: 'check-duplicate.js'
-  post: 'upload-success.js'
-  post-if: 'success()'
+  main: 'dist/index.js'
