@@ -5762,10 +5762,18 @@ async function main() {
         logFatal("Did not find github_token");
     }
     const octokit = github.getOctokit(token);
-    const { owner, repo } = github.context.payload;
+    const repo = github.context.payload.repository;
+    const repoOwner = repo?.owner?.name;
+    const repoName = repo?.name;
+    if (!repoOwner) {
+        logFatal("Did not find repo owner");
+    }
+    if (!repoName) {
+        logFatal("Did not find repo name");
+    }
     const { data } = await octokit.actions.listWorkflowRunsForRepo({
-        owner,
-        repo,
+        owner: repoOwner,
+        repo: repoName,
     });
     console.log(`Found ${data.total_count} runs total.`, data);
     const successfulRuns = data.workflow_runs.filter((run) => {

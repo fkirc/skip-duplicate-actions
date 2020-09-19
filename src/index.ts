@@ -31,7 +31,15 @@ async function main() {
   }
   const octokit = github.getOctokit(token);
 
-  const { owner, repo } = github.context.payload;
+  const repo = github.context.payload.repository;
+  const repoOwner = repo?.owner?.name;
+  const repoName = repo?.name;
+  if (!repoOwner) {
+    logFatal("Did not find repo owner");
+  }
+  if (!repoName) {
+    logFatal("Did not find repo name");
+  }
   /*const { data: current_run } = await octokit.actions.getWorkflowRun({
     owner,
     repo,
@@ -41,8 +49,8 @@ async function main() {
   console.log(`Found current workflow_id: ${currentWorkflowId}`);*/
 
   const { data } = await octokit.actions.listWorkflowRunsForRepo({
-    owner,
-    repo,
+    owner: repoOwner,
+    repo: repoName,
     //workflow_id: currentWorkflowId,
   });
   console.log(`Found ${data.total_count} runs total.`, data);
