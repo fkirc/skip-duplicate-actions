@@ -76,6 +76,7 @@ async function main() {
   }));
 }
 
-main()
-  .then(() => core.info('Cancel Complete.'))
-  .catch(e => core.setFailed(e.message));
+main().catch((e) => {
+    console.error(e);
+    core.setFailed(e.message)
+  });
