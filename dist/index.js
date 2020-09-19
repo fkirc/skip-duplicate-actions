@@ -5765,21 +5765,15 @@ async function main() {
     }
     const octokit = github.getOctokit(token);
     const { owner, repo } = github.context.payload;
-    const { data: current_run } = await octokit.actions.getWorkflowRun({
+    const { data } = await octokit.actions.listWorkflowRunsForRepo({
         owner,
         repo,
-        run_id: github.context.runId
-    });
-    const currentWorkflowId = current_run.workflow_id;
-    console.log(`Found current workflow_id: ${currentWorkflowId}`);
-    const { data } = await octokit.actions.listWorkflowRuns({
-        owner,
-        repo,
-        workflow_id: currentWorkflowId,
     });
     console.log(`Found ${data.total_count} runs total.`, data);
-    const successfulWorkflows = data.workflow_runs.filter(run => run.status === 'completed' && run.conclusion === 'success');
-    console.log(`Found ${successfulWorkflows.length} successful runs.`, successfulWorkflows);
+    const successfulRuns = data.workflow_runs.filter((run) => {
+        return run.status === 'completed' && run.conclusion === 'success';
+    });
+    console.log(`Found ${successfulRuns.length} successful runs.`, successfulRuns);
 }
 main().catch((e) => {
     console.error(e);
