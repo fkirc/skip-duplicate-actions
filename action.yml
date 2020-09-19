@@ -15,6 +15,6 @@ runs:
   using: 'node12'
   pre: 'pre-step.js'
   pre-if: 'always()'
-  main: 'index.js'
+  main: 'check-duplicate.js'
   post: 'upload-success.js'
   post-if: 'success()'

@@ -1,4 +1,4 @@
-const github = require('@actions/github');
+//const github = require('@actions/github');
 const core = require('@actions/core');
 const artifact = require('@actions/artifact');
 const fs = require("fs");
@@ -8,10 +8,9 @@ async function run() {
   // The YML workflow will need to set myToken with the GitHub Secret Token
   // GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   // https://help.github.com/en/actions/automating-your-workflow-with-github-actions/authenticating-with-the-github_token#about-the-github_token-secret
-  const gitHubToken = core.getInput('github-token');
 
-  const octokit = github.getOctokit(gitHubToken)
-
+  //const gitHubToken = core.getInput('github-token');
+  //const octokit = github.getOctokit(gitHubToken)
   // You can also pass in additional options as a second parameter to getOctokit
   // const octokit = github.getOctokit(myToken, {userAgent: "MyActionVersion1"});
 
