@@ -1,6 +1,7 @@
 const github = require('@actions/github');
 const core = require('@actions/core');
 const artifact = require('@actions/artifact');
+const fs = require("fs");
 
 async function run() {
   // This should be a token with access to your repository scoped in as a secret.
@@ -24,18 +25,17 @@ async function run() {
   // });
   // console.log(pullRequest);
 
-  const artifactClient = artifact.create()
   const artifactName = 'my-artifact';
+  fs.writeFileSync(artifactName, "some artifact content", { encoding: "utf8" });
+  const artifactClient = artifact.create();
   const files = [
-    '/home/user/files/plz-upload/file1.txt',
-    '/home/user/files/plz-upload/file2.txt',
-    '/home/user/files/plz-upload/dir/file3.txt'
-  ]
-  const rootDirectory = '/home/user/files/plz-upload'
+    artifactName,
+  ];
+  const rootDirectory = '.'
   const options = {
     continueOnError: true
-  }
-  const uploadResult = await artifactClient.uploadArtifact(artifactName, files, rootDirectory, options)
+  };
+  const uploadResult = await artifactClient.uploadArtifact(artifactName, files, rootDirectory, options);
 
 }
 
