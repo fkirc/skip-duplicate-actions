@@ -5768,7 +5768,7 @@ async function main() {
     const { data: current_run } = await octokit.actions.getWorkflowRun({
         owner,
         repo,
-        run_id: Number(process.env.GITHUB_RUN_ID)
+        run_id: github.context.runId
     });
     const currentWorkflowId = current_run.workflow_id;
     console.log(`Found current workflow_id: ${currentWorkflowId}`);
@@ -5783,7 +5783,7 @@ async function main() {
 }
 main().catch((e) => {
     console.error(e);
-    core.setFailed(e.message);
+    logFatal(e.message);
 });
 
 
