@@ -5745,6 +5745,11 @@ if (!core) {
 async function main() {
     const { eventName, sha, ref, repo: { owner, repo }, payload } = github.context;
     const { GITHUB_RUN_ID } = process.env;
+    console.log(JSON.stringify(github.context));
+    if (eventName === 'workflow_dispatch') {
+        console.info("Do not skip workflow because it was triggered with workflow_dispatch");
+        return;
+    }
     let branch = ref.slice(11);
     let headSha = sha;
     if (payload.pull_request) {
