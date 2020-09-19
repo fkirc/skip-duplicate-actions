@@ -16,50 +16,10 @@ Typically, you will want to add this action as the first step in a workflow so i
 
 ```yml
 jobs:
-  test:
+  my_job:
     runs-on: ubuntu-latest
     steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.5.0
+      - uses: fkirc/skip-duplicate-action-runs@master
         with:
-          access_token: ${{ github.token }}
-      #- name: Run Tests
-      #  uses: actions/setup-node@v1
-      #  run: node test.js
-      # ... etc
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
-
-
-### Advanced
-
-In some cases, you may wish to avoid modifying all your workflows and instead create a new workflow that cancels your other workflows. This can be useful when you have a problem with workflows getting queued.
-
-- Visit `https://api.github.com/repos/:org/:repo/actions/workflows` to find the Workflow ID(s) you wish to automaticaly cancel.
-- Add a new file `.github/workflows/cancel.yml` with the following:
-
-```yml
-name: Cancel
-on: [push]
-jobs:
-  cancel:
-    name: 'Cancel Previous Runs'
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
-    steps:
-      - uses: styfle/cancel-workflow-action@0.5.0
-        with:
-          workflow_id: 479426
-          access_token: ${{ github.token }}
-```
-
-_Note_: `workflow_id` accepts a comma separated list of IDs.
-
-At the time of writing `0.5.0` is the latest release but you can select any [release](https://github.com/styfle/cancel-workflow-action/releases).
-
-## Contributing
-
-- Clone this repo
-- Run `yarn install`
-- Edit `./src/index.ts`
-- Run `yarn build`
-- Commit changes including `./dist/index.js` bundle
