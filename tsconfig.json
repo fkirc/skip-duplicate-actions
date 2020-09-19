@@ -3,7 +3,7 @@
         "esModuleInterop": true,
         "outDir": "./dist",
         "module": "commonjs",
-        "target": "esnext",
+        "target": "es2019",
         "moduleResolution": "node",
         "strict": true,
         "noFallthroughCasesInSwitch": true,

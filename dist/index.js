@@ -5747,6 +5747,7 @@ function logFatal(msg) {
     return process.exit(1);
 }
 async function main() {
+    var _a;
     console.log(github.context);
     if (github.context.eventName === 'workflow_dispatch') {
         return console.info("Do not skip workflow because it was triggered with workflow_dispatch");
@@ -5763,8 +5764,8 @@ async function main() {
     }
     const octokit = github.getOctokit(token);
     const repo = github.context.payload.repository;
-    const repoOwner = repo?.owner?.name;
-    const repoName = repo?.name;
+    const repoOwner = (_a = repo === null || repo === void 0 ? void 0 : repo.owner) === null || _a === void 0 ? void 0 : _a.name;
+    const repoName = repo === null || repo === void 0 ? void 0 : repo.name;
     if (!repoOwner) {
         logFatal("Did not find repo owner");
     }
