@@ -21,7 +21,7 @@ async function main() {
   const headCommit = github.context.payload.head_commit;
   const treeHash: string = headCommit.tree_id;
   if (!treeHash) {
-    logFatal("Could not find tree hash of head commit");
+    logFatal("Did not find tree hash of head commit");
   }
   console.log("Found tree hash", treeHash);
 
@@ -40,20 +40,23 @@ async function main() {
   if (!repoName) {
     logFatal("Did not find repo name");
   }
-  /*const { data: current_run } = await octokit.actions.getWorkflowRun({
-    owner,
-    repo,
+  const { data: current_run } = await octokit.actions.getWorkflowRun({
+    owner: repoOwner,
+    repo: repoName,
     run_id: github.context.runId
   });
   const currentWorkflowId = current_run.workflow_id;
-  console.log(`Found current workflow_id: ${currentWorkflowId}`);*/
+  if (!currentWorkflowId) {
+    logFatal("Did not find current workflow id");
+  }
+  console.log(`Found current workflow_id: ${currentWorkflowId}`);
 
-  const { data } = await octokit.actions.listWorkflowRunsForRepo({
+  const { data } = await octokit.actions.listWorkflowRuns({
     owner: repoOwner,
     repo: repoName,
+    workflow_id: currentWorkflowId,
     status: "success" as unknown as any,
-    per_page: 99
-    //workflow_id: currentWorkflowId,
+    per_page: 100,
   });
   console.log(`Found ${data.workflow_runs.length} runs total.`, data);
   const successfulRuns = data.workflow_runs.filter((run) => {
