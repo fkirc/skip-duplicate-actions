@@ -6,5 +6,5 @@ jobs:
     steps:
       - uses: fkirc/skip-duplicate-action-runs@master
         with:
-          github_token: ${{ github.token }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - run: pwd && ls -la

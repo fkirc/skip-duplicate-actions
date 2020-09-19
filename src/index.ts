@@ -7,7 +7,7 @@ if (!core) {
   throw new Error('Module not found: core');
 }
 
-export function logFatal(msg: string): never {
+function logFatal(msg: string): never {
   core.setFailed(msg);
   return process.exit(1) as never;
 }

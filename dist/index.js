@@ -5734,7 +5734,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.logFatal = void 0;
 const core = __importStar(__webpack_require__(186));
 const github = __importStar(__webpack_require__(438));
 if (!github) {
@@ -5747,7 +5746,6 @@ function logFatal(msg) {
     core.setFailed(msg);
     return process.exit(1);
 }
-exports.logFatal = logFatal;
 async function main() {
     console.log(github.context);
     if (github.context.eventName === 'workflow_dispatch') {
