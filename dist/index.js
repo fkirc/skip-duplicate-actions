@@ -5739,7 +5739,8 @@ const github = __importStar(__webpack_require__(438));
 async function main() {
     var _a;
     if (github.context.eventName === 'workflow_dispatch') {
-        return console.info("Do not skip execution because the workflow was triggered with workflow_dispatch.");
+        console.info("Do not skip execution because the workflow was triggered with workflow_dispatch.");
+        exitSuccess({ shouldSkip: false });
     }
     const currentTreeHash = github.context.payload.head_commit.tree_id;
     if (!currentTreeHash) {
@@ -5787,15 +5788,20 @@ async function main() {
         if (treeHash === currentTreeHash) {
             const traceabilityUrl = run.html_url;
             console.info(`Skip execution because the exact same files have been successfully checked in ${traceabilityUrl}`);
-            process.exit(0);
+            exitSuccess({ shouldSkip: true });
         }
     }
     console.info("Do not skip execution because we did not find a duplicate run.");
+    exitSuccess({ shouldSkip: false });
 }
 main().catch((e) => {
     console.error(e);
     logFatal(e.message);
 });
+function exitSuccess(args) {
+    core.setOutput("is_duplicate", args.shouldSkip);
+    return process.exit(0);
+}
 function logFatal(msg) {
     core.setFailed(msg);
     return process.exit(1);
