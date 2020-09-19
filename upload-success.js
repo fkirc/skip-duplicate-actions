@@ -35,7 +35,14 @@ async function run() {
     continueOnError: true
   };
   const uploadResult = await artifactClient.uploadArtifact(artifactName, files, rootDirectory, options);
+  console.info(JSON.stringify(uploadResult));
 
+
+  const downloadOptions = {
+    createArtifactFolder: false,
+  };
+  const downloadResponse = await artifactClient.downloadArtifact(artifactName, rootDirectory, downloadOptions);
+  console.info(JSON.stringify(downloadResponse));
 }
 
 run().catch((error) => {
