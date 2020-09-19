@@ -10,6 +10,7 @@ jobs:
         uses: fkirc/skip-duplicate-action-runs@master
         with:
           who-to-greet: 'Mona the Octocat'
+          github-token: '${{ secrets.GITHUB_TOKEN }}'
       # Use the output from the `hello` step
       - name: Get the output time
         run: echo "The time was ${{ steps.hello.outputs.time }}"
