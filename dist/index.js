@@ -5775,6 +5775,7 @@ async function main() {
     const { data } = await octokit.actions.listWorkflowRunsForRepo({
         owner: repoOwner,
         repo: repoName,
+        status: "success",
     });
     console.log(`Found ${data.total_count} runs total.`, data);
     const successfulRuns = data.workflow_runs.filter((run) => {
