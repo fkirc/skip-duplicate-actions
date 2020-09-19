@@ -39,4 +39,6 @@ async function run() {
 
 }
 
-run();
+run().catch((error) => {
+    core.setFailed(error.message);
+});
