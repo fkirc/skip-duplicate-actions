@@ -13,5 +13,6 @@ try {
     console.info(`Tree hash: ${treeHash}`);
     console.info(`Commit URL: ${commitUrl}`);
 } catch (error) {
+    console.error(error);
     core.setFailed(error);
 }
