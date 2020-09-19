@@ -4,7 +4,7 @@
   "main": "dist/index.js",
   "license": "MIT",
   "scripts": {
-    "build": "ncc build src/index.ts"
+    "build": "rm -rf dist/ && ncc build src/index.ts"
   },
   "dependencies": {
     "@actions/core": "^1.2.5",
@@ -17,7 +17,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "npm run build && git diff --exit-code"
+      "pre-commit": "npm run build && git diff --exit-code dist/"
     }
   }
 }

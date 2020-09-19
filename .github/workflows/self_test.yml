@@ -1,8 +1,10 @@
-on: [push]
+on: [push] # TODO: Test workflow_dispatch
 
 jobs:
-  local_test_job:
+  self_test:
     runs-on: ubuntu-latest
     steps:
       - uses: fkirc/skip-duplicate-action-runs@master
+        with:
+          github_token: ${{ github.token }}
       - run: pwd && ls -la
