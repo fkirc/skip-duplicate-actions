@@ -5,13 +5,14 @@
 - [Detect duplicate Action-runs](#detect-duplicate-action-runs) after branch-merges.
 - [Cancel outdated Action-runs](#cancel-outdated-action-runs) after branch-pushes.
 
+Both features help to save time and costs; especially for long-running GitHub Actions.
 You can choose either one or both of those features.
 
 ## Detect duplicate Action-runs
 
 If you merge lots of feature branches, then you might see lots of _duplicate Action-runs_.
 A duplicate Action-run happens if an Action has successfully passed on a feature branch, but the Action is then repeated right after merging the feature branch.
-`skip-duplicate-action-runs` helps to prevent such unnecessary runs; saving both time and costs.
+`skip-duplicate-action-runs` helps to prevent such unnecessary runs.
 
 - **Full traceability:** If a duplicate Action-run is detected, then you will see a message like `Skip execution because the exact same files have been successfully checked in https://github.com/fkirc/skip-duplicate-action-runs/actions/runs/263149724`.
 - **Respect manual triggers:** If you manually trigger an Action-run with `workflow_dispatch`, then the Action-run will not be skipped.
