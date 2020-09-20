@@ -5825,7 +5825,6 @@ function detectDuplicateWorkflowsAndExit(duplicateRuns) {
     exitSuccess({ shouldSkip: false });
 }
 main().catch((e) => {
-    core.error(e);
     console.error(e);
     logFatal(e.message);
 });

@@ -107,7 +107,7 @@ function detectDuplicateWorkflowsAndExit(duplicateRuns: WorkflowRun[]): never {
 }
 
 main().catch((e) => {
-  core.error(e);
+  //core.error(e);
   console.error(e);
   logFatal(e.message);
 });
