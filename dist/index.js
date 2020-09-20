@@ -5738,10 +5738,6 @@ const core = __importStar(__webpack_require__(186));
 const github = __importStar(__webpack_require__(438));
 async function main() {
     var _a;
-    if (github.context.eventName === 'workflow_dispatch') {
-        core.info("Do not skip execution because the workflow was triggered with workflow_dispatch.");
-        exitSuccess({ shouldSkip: false });
-    }
     const currentTreeHash = github.context.payload.head_commit.tree_id;
     if (!currentTreeHash) {
         logFatal("Did not find the current tree hash");
@@ -5773,23 +5769,53 @@ async function main() {
         owner: repoOwner,
         repo: repoName,
         workflow_id: currentWorkflowId,
-        status: "success",
         per_page: 100,
     });
-    const successfulRuns = data.workflow_runs.filter((run) => {
-        return run.status === 'completed' && run.conclusion === 'success';
+    const workflowRuns = filterWorkflowRuns(data, current_run);
+    const duplicateRuns = workflowRuns.filter((run) => run.treeHash === currentTreeHash);
+    detectDuplicateWorkflowsAndExit(duplicateRuns);
+}
+function filterWorkflowRuns(response, currentRun) {
+    const rawWorkflowRuns = response.workflow_runs.filter((run) => {
+        return new Date(run.created_at).getTime() < new Date(currentRun.created_at).getTime();
     });
-    core.info(`Found ${successfulRuns.length} successful runs of the same workflow.`);
-    for (const run of successfulRuns) {
+    return rawWorkflowRuns.map((run) => {
         const treeHash = run.head_commit.tree_id;
         if (!treeHash) {
             logFatal("Received a run without a tree hash");
         }
-        if (treeHash === currentTreeHash) {
-            const traceabilityUrl = run.html_url;
-            core.info(`Skip execution because the exact same files have been successfully checked in ${traceabilityUrl}`);
-            exitSuccess({ shouldSkip: true });
-        }
+        return {
+            treeHash,
+            status: run.status,
+            conclusion: run.conclusion,
+            html_url: run.html_url
+        };
+    });
+}
+function detectDuplicateWorkflowsAndExit(duplicateRuns) {
+    if (github.context.eventName === 'workflow_dispatch') {
+        core.info("Do not skip execution because the workflow was triggered with workflow_dispatch.");
+        exitSuccess({ shouldSkip: false });
+    }
+    const successfulDuplicate = duplicateRuns.find((run) => {
+        return run.status === 'completed' && run.conclusion === 'success';
+    });
+    if (successfulDuplicate) {
+        core.info(`Skip execution because the exact same files have been successfully checked in ${successfulDuplicate.html_url}`);
+        exitSuccess({ shouldSkip: true });
+    }
+    const concurrentDuplicate = duplicateRuns.find((run) => {
+        return run.status === 'queued' || run.status === 'in_progress';
+    });
+    if (concurrentDuplicate) {
+        core.info(`Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`);
+        exitSuccess({ shouldSkip: true });
+    }
+    const failedDuplicate = duplicateRuns.find((run) => {
+        return run.status === 'completed' && run.conclusion === 'failure';
+    });
+    if (failedDuplicate) {
+        logFatal(`Trigger a failure because ${failedDuplicate.html_url} has failed with the exact same files. You can use 'workflow_dispatch' to manually enforce a re-run.`);
     }
     core.info("Do not skip execution because we did not find a duplicate run.");
     exitSuccess({ shouldSkip: false });
