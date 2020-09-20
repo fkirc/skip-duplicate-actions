@@ -10,5 +10,20 @@ jobs:
           github_token: ${{ github.token }}
       - if: ${{ steps.skip.outputs.should_skip == 'false' }}
         run: |
-          echo "Running slow tests..." && sleep 60
+          echo "Running slow tests..." && sleep 32
           echo "Do other stuff..."
+
+  private_test:
+    runs-on: ubuntu-latest
+    steps:
+      # To use this repository's private action, we checkout the repository
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: skip-duplicate-actions private checkout
+        uses: ./ # Uses this action in the root directory
+        id: skip
+        with:
+          github_token: ${{ github.token }}
+      - if: ${{ steps.skip.outputs.should_skip == 'false' }}
+        run: |
+          echo "Running slow stuff..." && sleep 32
