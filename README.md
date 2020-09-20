@@ -20,7 +20,7 @@ A duplicate workflow-run happens if a workflow has successfully passed on a feat
   For example, this can happen if a workflow has both `push` and `pull_request` triggers.
 - **Respect manual triggers:** If you manually trigger a workflow with `workflow_dispatch`, then the workflow-run will not be skipped.
 - **Flexible Git usage:** `skip-duplicate-actions` does not care whether you use fast-forward-merges, rebase-merges or squash-merges.
-  However, if a merge yields a result that is different from the feature branch, then the resulting workflow-run will _not_ be skipped.
+  However, if a merge yields a result that is different from the source branch, then the resulting workflow-run will _not_ be skipped.
   This is commonly the case if you merge "outdated branches".
   
 ## Cancel outdated workflow-runs
