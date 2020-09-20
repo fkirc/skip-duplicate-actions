@@ -21,7 +21,7 @@ A duplicate Action-run happens if an Action has successfully passed on a feature
 
 ## Outputs
 
-### `is_duplicate`
+### `should_skip`
 
 Indicates whether the current Action-run is a duplicate Action-run.
 If this is `false`, then we should _not_ skip subsequent steps in a workflow.

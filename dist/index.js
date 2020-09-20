@@ -5799,7 +5799,7 @@ main().catch((e) => {
     logFatal(e.message);
 });
 function exitSuccess(args) {
-    core.setOutput("is_duplicate", args.shouldSkip);
+    core.setOutput("should_skip", args.shouldSkip);
     return process.exit(0);
 }
 function logFatal(msg) {

@@ -71,7 +71,7 @@ main().catch((e) => {
 });
 
 function exitSuccess(args: { shouldSkip: boolean }): never {
-  core.setOutput("is_duplicate", args.shouldSkip);
+  core.setOutput("should_skip", args.shouldSkip);
   return process.exit(0) as never;
 }
 

@@ -9,8 +9,8 @@ inputs:
     description: 'Your GitHub Access Token, ie: {{ github.token }}'
     required: true
 outputs:
-  is_duplicate:
-    description: 'True if a successful older workflow-run with the exact same files has been found.'
+  should_skip:
+    description: 'true if a duplicate Action-run was found, false otherwise.'
 runs:
   using: 'node12'
   main: 'dist/index.js'
