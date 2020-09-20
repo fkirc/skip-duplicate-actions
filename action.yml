@@ -12,14 +12,10 @@ inputs:
     description: 'If true, then workflow-runs from outdated commits will be cancelled'
     required: false
     default: 'true'
-  cancel_self:
-    description: 'If true, then the workflow will cancel itself if a duplicate workflow-run was found'
-    required: false
-    default: 'true'
 
 outputs:
   should_skip:
-    description: 'true if a duplicate workflow-run was found, false otherwise. This is only relevant if cancel_self is false.'
+    description: 'true if the current run is a duplicate workflow-run. This should be evaluated for either individual steps or entire jobs.'
 runs:
   using: 'node12'
   main: 'dist/index.js'

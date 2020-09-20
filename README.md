@@ -41,16 +41,11 @@ Therefore, when you push changes to a branch, `skip-duplicate-actions` will canc
 
 If true, then workflow-runs from outdated commits will be cancelled. Default `true`.
 
-### `cancel_self`
-
-If true, then the workflow will cancel itself if a duplicate workflow-run was found. Default `true`.
-
 ## Outputs
 
 ### `should_skip`
 
-true if the current run is a duplicate workflow-run.
-This is only relevant if `cancel_self` is false.
+true if the current run is a duplicate workflow-run. This should be evaluated for either individual steps or entire jobs.
 
 ## Simple usage
 
@@ -70,7 +65,6 @@ jobs:
 
 ## Advanced usage
 
-If you want to avoid self-cancellations, then you can use `cancel_self=false` in combination with the `should_skip`-output.
 Typically, you will use `if`-conditions and an `id` to evaluate the `should_skip`-output:
 
 ```yml
@@ -82,7 +76,6 @@ jobs:
         id: skip
         with:
           github_token: ${{ github.token }}
-          cancel_self: 'false'
       - if: ${{ steps.skip.outputs.should_skip == 'false' }}
         run: |
           echo "Running slow tests..." && sleep 30

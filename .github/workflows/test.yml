@@ -11,7 +11,6 @@ jobs:
         uses: fkirc/skip-duplicate-actions@master
         with:
           github_token: ${{ github.token }}
-          cancel_self: 'false'
 
   main_job:
     needs: pre_job
@@ -29,7 +28,6 @@ jobs:
         uses: fkirc/skip-duplicate-actions@master
         with:
           github_token: ${{ github.token }}
-          cancel_self: 'false'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
           echo "Running slow tests..." && sleep 30
@@ -48,7 +46,6 @@ jobs:
         with:
           github_token: ${{ github.token }}
           cancel_others: 'false'
-          cancel_self: 'false'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
           echo "Running slow tests..." && sleep 30
