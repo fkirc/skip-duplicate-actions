@@ -14,12 +14,12 @@ If you merge lots of feature branches, then you might see lots of _duplicate wor
 A duplicate workflow-run happens if a workflow has successfully passed on a feature branch, but then the workflow is repeated right after merging the feature branch.
 `skip-duplicate-actions` helps to prevent such unnecessary runs.
 
-- **Traceable success propagation:** Usually, you will see a message like `Skip execution because the exact same files have been successfully checked in https://github.com/fkirc/skip-duplicate-actions/actions/runs/263149724`.
+- **Traceable success propagation:** After clean merges, you will see a message like `Skip execution because the exact same files have been successfully checked in https://github.com/fkirc/skip-duplicate-actions/actions/runs/263149724`.
 - **Traceable failure propagation:** If failure is inevitable, then you will see a message like `Trigger a failure because https://github.com/fkirc/skip-duplicate-actions/actions/runs/263149724 has already failed with the exact same files. You can use 'workflow_dispatch' to manually enforce a re-run`.
 - **Skip concurrent workflow-runs:** If the exact same workflow is triggered twice, then one of them will be skipped.
   For example, this can happen if a workflow has both `push` and `pull_request` triggers.
 - **Respect manual triggers:** If you manually trigger a workflow with `workflow_dispatch`, then the workflow-run will not be skipped.
-- **Flexible workflows:** `skip-duplicate-actions` does not care whether you use fast-forward-merges, rebase-merges or squash-merges.
+- **Flexible Git usage:** `skip-duplicate-actions` does not care whether you use fast-forward-merges, rebase-merges or squash-merges.
   However, if a merge yields a result that is different from the feature branch, then the resulting workflow-run will _not_ be skipped.
   This is commonly the case if you merge "outdated branches".
   
@@ -27,9 +27,9 @@ A duplicate workflow-run happens if a workflow has successfully passed on a feat
 
 When you push changes to a branch, then `skip-duplicate-actions` will cancel any previous workflow-runs that run against outdated commits.
 
-- **Full traceability:** If a workflow-run is cancelled, then you will see a message like `Cancel https://github.com/fkirc/skip-duplicate-actions/actions/runs/263149724 because it runs against an outdated commit on branch 'master'.`.
+- **Full traceability:** If a workflow-run is cancelled, then you will see a message like `Cancel https://github.com/fkirc/skip-duplicate-actions/actions/runs/263149724 because it runs against an outdated commit on branch 'master'`.
 - **Battle-tested:** Most of the implementation is from https://github.com/styfle/cancel-workflow-action.
-- **Guaranteed execution:** Despite the underlying complexity, the cancellation algorithm guarantees that at least one workflow will finish no matter what.
+- **Guaranteed execution:** Despite the underlying complexity, the cancellation algorithm guarantees that at least one complete check will finish no matter what.
 
 ## Inputs
 
@@ -71,7 +71,8 @@ jobs:
 `skip-duplicate-actions` uses the [Workflow Runs API](https://docs.github.com/en/rest/reference/actions#workflow-runs) to query workflow-runs.
 
 Firstly, `skip-duplicate-actions` will only look at workflow-runs that belong to the same workflow as the current workflow-run.
+Secondly, `skip-duplicate-actions` ignores all future workflow-runs in order to guard against race conditions and edge cases.
 After querying such workflow-runs, it will compare them with the current workflow-run as follows:
 
 - If there exists another workflow-runs with the same tree hash, then we have identified a duplicate workflow-run.
-- If there exists an older in-progress workflow-run that matches the current branch but not the current commit, then this workflow-run will be cancelled.
+- If there exists an older in-progress workflow-run that matches the current branch but not the current tree hash, then this workflow-run will be cancelled.
