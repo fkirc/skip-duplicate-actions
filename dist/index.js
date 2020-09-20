@@ -5736,19 +5736,44 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__webpack_require__(186));
 const github = __importStar(__webpack_require__(438));
+function filterWorkflowRuns(response, currentRun) {
+    const rawWorkflowRuns = response.workflow_runs.filter((run) => {
+        if (!run.head_commit) {
+            core.warning(`Run ${run} does not have a HEAD commit`);
+            return false;
+        }
+        return new Date(run.created_at).getTime() < new Date(currentRun.created_at).getTime();
+    });
+    return rawWorkflowRuns.map((run) => {
+        var _a, _b;
+        const treeHash = run.head_commit.tree_id;
+        if (!treeHash) {
+            logFatal("Received a run without a tree hash");
+        }
+        return {
+            treeHash,
+            status: run.status,
+            conclusion: (_a = run.conclusion) !== null && _a !== void 0 ? _a : null,
+            html_url: run.html_url,
+            branch: (_b = run.head_branch) !== null && _b !== void 0 ? _b : null,
+            runId: run.id,
+        };
+    });
+}
 async function main() {
-    const repo = github.context.repo;
-    const repoOwner = repo === null || repo === void 0 ? void 0 : repo.owner;
-    const repoName = repo === null || repo === void 0 ? void 0 : repo.repo;
-    if (!repoOwner) {
-        logFatal("Did not find the repo owner");
-    }
-    if (!repoName) {
-        logFatal("Did not find the repo name");
-    }
+    var _a;
     const token = core.getInput('github_token', { required: true });
     if (!token) {
         logFatal("Did not find github_token");
+    }
+    const repo = github.context.repo;
+    const repoOwner = repo === null || repo === void 0 ? void 0 : repo.owner;
+    if (!repoOwner) {
+        logFatal("Did not find the repo owner");
+    }
+    const repoName = repo === null || repo === void 0 ? void 0 : repo.repo;
+    if (!repoName) {
+        logFatal("Did not find the repo name");
     }
     const runId = github.context.runId;
     if (!runId) {
@@ -5768,6 +5793,7 @@ async function main() {
     if (!currentTreeHash) {
         logFatal(`Did not find the current tree hash for current run ${current_run}`);
     }
+    const currentBranch = (_a = current_run.head_branch) !== null && _a !== void 0 ? _a : null;
     const { data } = await octokit.actions.listWorkflowRuns({
         owner: repoOwner,
         repo: repoName,
@@ -5775,31 +5801,45 @@ async function main() {
         per_page: 100,
     });
     const workflowRuns = filterWorkflowRuns(data, current_run);
-    const duplicateRuns = workflowRuns.filter((run) => run.treeHash === currentTreeHash);
-    detectDuplicateWorkflowsAndExit(duplicateRuns);
-}
-function filterWorkflowRuns(response, currentRun) {
-    const rawWorkflowRuns = response.workflow_runs.filter((run) => {
-        if (!run.head_commit) {
-            core.warning(`Run ${run} does not have a HEAD commit`);
+    const cancelVictims = workflowRuns.filter((run) => {
+        if (run.treeHash === currentTreeHash) {
             return false;
         }
-        return new Date(run.created_at).getTime() < new Date(currentRun.created_at).getTime();
+        return run.branch === currentBranch;
     });
-    return rawWorkflowRuns.map((run) => {
-        const treeHash = run.head_commit.tree_id;
-        if (!treeHash) {
-            logFatal("Received a run without a tree hash");
-        }
-        return {
-            treeHash,
-            status: run.status,
-            conclusion: run.conclusion,
-            html_url: run.html_url
-        };
+    await cancelOutdatedRuns({
+        cancelVictims,
+        octokit,
+        repoOwner,
+        repoName,
     });
+    const duplicateRuns = workflowRuns.filter((run) => run.treeHash === currentTreeHash);
+    detectDuplicateRunsAndExit(duplicateRuns);
 }
-function detectDuplicateWorkflowsAndExit(duplicateRuns) {
+async function cancelOutdatedRuns(args) {
+    const cancellationEnabled = getBooleanInput('cancellation_enabled', true);
+    if (!cancellationEnabled) {
+        return core.info(`Skip cancellation because 'cancellation_enabled' is set to false`);
+    }
+    if (!args.cancelVictims.length) {
+        return core.info(`Skip cancellation because we did not find any suitable cancellation targets`);
+    }
+    for (const victim of args.cancelVictims) {
+        try {
+            const res = await args.octokit.actions.cancelWorkflowRun({
+                owner: args.repoOwner,
+                repo: args.repoName,
+                run_id: victim.runId,
+            });
+            core.info(`Cancelled run ${victim.html_url} with response code ${res.status}`);
+        }
+        catch (e) {
+            core.warning(e);
+            core.warning(`Failed to cancel run ${victim.html_url}`);
+        }
+    }
+}
+function detectDuplicateRunsAndExit(duplicateRuns) {
     if (github.context.eventName === 'workflow_dispatch') {
         core.info("Do not skip execution because the workflow was triggered with workflow_dispatch.");
         exitSuccess({ shouldSkip: false });
@@ -5827,10 +5867,18 @@ function detectDuplicateWorkflowsAndExit(duplicateRuns) {
     core.info("Do not skip execution because we did not find a duplicate run.");
     exitSuccess({ shouldSkip: false });
 }
-main().catch((e) => {
-    core.error(e);
-    logFatal(e.message);
-});
+function getBooleanInput(name, defaultValue) {
+    const rawInput = core.getInput(name, { required: false });
+    if (!rawInput) {
+        return defaultValue;
+    }
+    if (defaultValue) {
+        return rawInput.toLowerCase() !== 'false';
+    }
+    else {
+        return rawInput.toLowerCase() !== 'true';
+    }
+}
 function exitSuccess(args) {
     core.setOutput("should_skip", args.shouldSkip);
     return process.exit(0);
@@ -5839,6 +5887,10 @@ function logFatal(msg) {
     core.setFailed(msg);
     return process.exit(1);
 }
+main().catch((e) => {
+    core.error(e);
+    logFatal(e.message);
+});
 
 
 /***/ }),
