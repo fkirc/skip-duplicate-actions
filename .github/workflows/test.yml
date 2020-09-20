@@ -13,25 +13,29 @@ jobs:
           github_token: ${{ github.token }}
           cancel_self: 'false'
 
-  simple_usage:
+  main_job:
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip == 'false' }}
     runs-on: ubuntu-latest
     steps:
       - run: echo "Running slow tests..." && sleep 30
 
-  advanced_usage:
+
+
+  skip_individual_steps_job:
     runs-on: ubuntu-latest
     steps:
       - uses: fkirc/skip-duplicate-actions@master
-        id: skip
+        id: skip_check
         with:
           github_token: ${{ github.token }}
           cancel_self: 'false'
-      - if: ${{ steps.skip.outputs.should_skip == 'false' }}
+      - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
           echo "Running slow tests..." && sleep 30
           echo "Do other stuff..."
+
+
 
   private_action:
     runs-on: ubuntu-latest
@@ -41,11 +45,11 @@ jobs:
         uses: actions/checkout@v2
       - name: skip-duplicate-actions
         uses: ./ # Uses this Action in the root directory
-        id: skip
+        id: skip_check
         with:
           github_token: ${{ github.token }}
           cancel_others: 'false'
           cancel_self: 'false'
-      - if: ${{ steps.skip.outputs.should_skip == 'false' }}
+      - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
           echo "Running slow tests..." && sleep 30
