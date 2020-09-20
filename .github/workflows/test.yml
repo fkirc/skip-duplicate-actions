@@ -10,7 +10,7 @@ jobs:
           github_token: ${{ github.token }}
       - if: ${{ steps.skip.outputs.should_skip == 'false' }}
         run: |
-          echo "Running slow tests..." && sleep 35
+          echo "Running slow tests..." && sleep 32
           echo "Do other stuff..."
 
   private_test:
@@ -26,4 +26,4 @@ jobs:
           github_token: ${{ github.token }}
       - if: ${{ steps.skip.outputs.should_skip == 'false' }}
         run: |
-          echo "Running slow stuff..." && sleep 35
+          echo "Running slow stuff..." && sleep 32
