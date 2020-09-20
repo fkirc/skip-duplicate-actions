@@ -43,8 +43,6 @@ This ensures that GitHub's resources focus on the latest commit, instead of wast
 
 Set this to `false` if you want to disable the cancellation feature. Default `true`.
 
-**Required** Your access token for GitHub. Should be set to `${{ secrets.GITHUB_TOKEN }}`.
-
 ## Outputs
 
 ### `should_skip`
