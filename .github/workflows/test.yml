@@ -7,7 +7,7 @@ jobs:
       - uses: fkirc/skip-duplicate-actions@master
         id: skip
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ github.token }}
       - if: ${{ steps.skip.outputs.should_skip == 'false' }}
         run: |
           echo "Running slow tests..."
