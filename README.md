@@ -48,8 +48,8 @@ If true, then the workflow will cancel itself if a duplicate workflow-run was fo
 
 ### `should_skip`
 
-Indicates whether the current workflow-run is a duplicate workflow-run.
-This is only relevant if cancel_self is false.
+true if the current run is a duplicate workflow-run.
+This is only relevant if `cancel_self` is false.
 
 ## Example usage
 

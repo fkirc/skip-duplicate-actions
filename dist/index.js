@@ -5821,7 +5821,7 @@ async function cancelOutdatedRuns(context) {
         return run.treeHash !== currentRun.treeHash && run.branch === currentRun.branch;
     });
     if (!cancelVictims.length) {
-        return core.info(`Did not find any suitable cancellation targets`);
+        return core.info(`Did not find other workflow-runs to be cancelled`);
     }
     for (const victim of cancelVictims) {
         await cancelWorkflowRun(victim, context);

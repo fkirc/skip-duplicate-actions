@@ -19,18 +19,18 @@ jobs:
           cancel_self: 'false'
       - if: ${{ steps.skip.outputs.should_skip == 'false' }}
         run: |
-          echo "Running slow tests..." && sleep 32
+          echo "Running slow tests..." && sleep 30
           echo "Do other stuff..."
 
   private_action:
     runs-on: ubuntu-latest
     steps:
-      # To use this repository's private action, we checkout the repository
+      # To use the Action from the current branch, we checkout the repository
       - name: Checkout
         uses: actions/checkout@v2
       - name: skip-duplicate-actions
-        uses: ./ # Uses this action in the root directory
+        uses: ./ # Uses this Action in the root directory
         with:
           github_token: ${{ github.token }}
           cancel_others: 'false'
-      - run: echo "Running slow tests..." && sleep 32
+      - run: echo "Running slow tests..." && sleep 30
