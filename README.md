@@ -2,7 +2,7 @@
 
 `skip-duplicate-actions` provides two separate features for [GitHub Actions](https://github.com/features/actions):
 
-- [Detect duplicate workflow-runs](#detect-duplicate-workflow-runs) after branch-merges.
+- [Detect duplicate workflow-runs](#detect-duplicate-workflow-runs) after branch-merges or pull requests.
 - [Cancel outdated workflow-runs](#cancel-outdated-workflow-runs) after branch-pushes.
 
 Both features help to save time and costs; especially for long-running workflows.
