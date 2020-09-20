@@ -15,7 +15,7 @@ interface WorkflowRun {
 async function main() {
   const currentTreeHash: string = github.context?.payload?.head_commit?.tree_id;
   if (!currentTreeHash) {
-    logFatal(`Did not find the current tree has in context ${github.context}`);
+    logFatal(`Did not find the current tree hash in context ${github.context}`);
   }
   const repo = github.context.payload.repository;
   const repoOwner = repo?.owner?.name;
