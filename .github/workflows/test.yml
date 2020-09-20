@@ -25,8 +25,8 @@ jobs:
   skip_individual_steps_job:
     runs-on: ubuntu-latest
     steps:
-      - uses: fkirc/skip-duplicate-actions@master
-        id: skip_check
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@master
         with:
           github_token: ${{ github.token }}
           cancel_self: 'false'
@@ -43,9 +43,8 @@ jobs:
       # To use the Action from the current branch, we checkout the repository
       - name: Checkout
         uses: actions/checkout@v2
-      - name: skip-duplicate-actions
+      - id: skip_check
         uses: ./ # Uses this Action in the root directory
-        id: skip_check
         with:
           github_token: ${{ github.token }}
           cancel_others: 'false'
