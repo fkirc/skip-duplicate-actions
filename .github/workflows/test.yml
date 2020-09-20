@@ -11,6 +11,7 @@ jobs:
         uses: fkirc/skip-duplicate-actions@master
         with:
           github_token: ${{ github.token }}
+          self_cancel: 'false'
 
   simple_usage:
     needs: pre_job
