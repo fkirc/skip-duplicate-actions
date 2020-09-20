@@ -29,7 +29,7 @@ When you push changes to a branch, then `skip-duplicate-actions` will cancel any
 
 - **Full traceability:** If a workflow-run is cancelled, then you will see a message like `Cancel https://github.com/fkirc/skip-duplicate-actions/actions/runs/263149724 because it runs against an outdated commit on branch 'master'`.
 - **Battle-tested:** Most of the implementation is from https://github.com/styfle/cancel-workflow-action.
-- **Guaranteed execution:** Despite the underlying complexity, the cancellation algorithm guarantees that at least one complete check will finish no matter what.
+- **Guaranteed execution:** Despite the underlying complexity, the cancellation algorithm guarantees that a complete check-set will finish no matter what.
 
 ## Inputs
 
