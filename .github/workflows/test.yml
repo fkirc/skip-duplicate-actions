@@ -12,3 +12,14 @@ jobs:
         run: |
           echo "Running slow tests..." && sleep 60
           echo "Do other stuff..."
+
+  private_test:
+    runs-on: ubuntu-latest
+    steps:
+      # To use this repository's private action, you must check out the repository
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Test Step
+        uses: ./ # Uses this action in the root directory
+        with:
+          access_token: ${{ github.token }}
