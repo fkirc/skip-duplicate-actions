@@ -1,7 +1,7 @@
 on: [push, workflow_dispatch]
 
 jobs:
-  self_test:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: fkirc/skip-duplicate-action-runs@master
