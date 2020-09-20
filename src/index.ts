@@ -3,7 +3,7 @@ import * as github from '@actions/github';
 
 async function main() {
   if (github.context.eventName === 'workflow_dispatch') {
-    console.info("Do not skip execution because the workflow was triggered with workflow_dispatch.");
+    core.info("Do not skip execution because the workflow was triggered with workflow_dispatch.");
     exitSuccess({ shouldSkip: false});
   }
 
@@ -48,7 +48,7 @@ async function main() {
     // This is just a sanity check; our request should return only successful runs.
     return run.status === 'completed' && run.conclusion === 'success'
   });
-  console.info(`Found ${successfulRuns.length} successful runs of the same workflow.`);
+  core.info(`Found ${successfulRuns.length} successful runs of the same workflow.`);
 
   for (const run of successfulRuns) {
     const treeHash = run.head_commit.tree_id;
@@ -57,16 +57,16 @@ async function main() {
     }
     if (treeHash === currentTreeHash) {
       const traceabilityUrl = run.html_url;
-      console.info(`Skip execution because the exact same files have been successfully checked in ${traceabilityUrl}`);
+      core.info(`Skip execution because the exact same files have been successfully checked in ${traceabilityUrl}`);
       exitSuccess({ shouldSkip: true});
     }
   }
-  console.info("Do not skip execution because we did not find a duplicate run.");
+  core.info("Do not skip execution because we did not find a duplicate run.");
   exitSuccess({ shouldSkip: false});
 }
 
 main().catch((e) => {
-  console.error(e);
+  core.error(e);
   logFatal(e.message);
 });
 
