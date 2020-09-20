@@ -15,9 +15,9 @@ interface WorkflowRun {
 async function main() {
   console.log(github.context); // TODO: Remove
 
-  const repo = github.context.payload.repository;
-  const repoOwner = repo?.owner?.name;
-  const repoName = repo?.name;
+  const repo = github.context.repo;
+  const repoOwner = repo?.owner;
+  const repoName = repo?.repo;
   if (!repoOwner) {
     logFatal("Did not find the repo owner");
   }

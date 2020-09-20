@@ -5737,11 +5737,10 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__webpack_require__(186));
 const github = __importStar(__webpack_require__(438));
 async function main() {
-    var _a;
     console.log(github.context);
-    const repo = github.context.payload.repository;
-    const repoOwner = (_a = repo === null || repo === void 0 ? void 0 : repo.owner) === null || _a === void 0 ? void 0 : _a.name;
-    const repoName = repo === null || repo === void 0 ? void 0 : repo.name;
+    const repo = github.context.repo;
+    const repoOwner = repo === null || repo === void 0 ? void 0 : repo.owner;
+    const repoName = repo === null || repo === void 0 ? void 0 : repo.repo;
     if (!repoOwner) {
         logFatal("Did not find the repo owner");
     }
