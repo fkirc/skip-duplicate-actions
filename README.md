@@ -51,22 +51,40 @@ If true, then the workflow will cancel itself if a duplicate workflow-run was fo
 true if the current run is a duplicate workflow-run.
 This is only relevant if `cancel_self` is false.
 
-## Example usage
+## Simple usage
 
+If you do not worry about self-cancellations, then it is easy to throw `skip-duplicate-actions` into your own workflow.
 Typically, you will want to add `skip-duplicate-actions` as the first step in a Job:
 
 ```yml
 jobs:
-  test:
+  simple_usage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: fkirc/skip-duplicate-actions@master
+        with:
+          github_token: ${{ github.token }}
+      - run: echo "Running slow tests..." && sleep 30
+```
+
+## Advanced usage
+
+If you want to avoid self-cancellations, then can use `self_cancel=false` in combination with the `should_skip`-output.
+Typically, you will use `if`-conditions and an `id` to evaluate the `should_skip`-output:
+
+```yml
+jobs:
+  advanced_usage:
     runs-on: ubuntu-latest
     steps:
       - uses: fkirc/skip-duplicate-actions@master
         id: skip
         with:
           github_token: ${{ github.token }}
+          cancel_self: 'false'
       - if: ${{ steps.skip.outputs.should_skip == 'false' }}
         run: |
-          echo "Running slow tests..."
+          echo "Running slow tests..." && sleep 30
           echo "Do other stuff..."
 ```
 
