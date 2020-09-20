@@ -23,3 +23,6 @@ jobs:
         uses: ./ # Uses this action in the root directory
         with:
           github_token: ${{ github.token }}
+      - if: ${{ steps.skip.outputs.should_skip == 'false' }}
+        run: |
+          echo "Running slow stuff..." && sleep 50
