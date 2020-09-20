@@ -11,7 +11,7 @@ You can choose either one or both of those features.
 ## Detect duplicate workflow-runs
 
 If you merge lots of feature branches, then you might see lots of _duplicate workflow-runs_.
-A duplicate workflow-run happens if an Action has successfully passed on a feature branch, but the Action is then repeated right after merging the feature branch.
+A duplicate workflow-run happens if a workflow has successfully passed on a feature branch, but then the workflow is repeated right after merging the feature branch.
 `skip-duplicate-action-runs` helps to prevent such unnecessary runs.
 
 - **Full traceability:** If a duplicate workflow-run is detected, then you will see a message like `Skip execution because the exact same files have been successfully checked in https://github.com/fkirc/skip-duplicate-action-runs/actions/runs/263149724`.
