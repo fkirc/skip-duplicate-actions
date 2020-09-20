@@ -14,7 +14,10 @@ If you merge lots of feature branches, then you might see lots of _duplicate wor
 A duplicate workflow-run happens if a workflow has successfully passed on a feature branch, but then the workflow is repeated right after merging the feature branch.
 `skip-duplicate-actions` helps to prevent such unnecessary runs.
 
-- **Full traceability:** If a duplicate workflow-run is detected, then you will see a message like `Skip execution because the exact same files have been successfully checked in https://github.com/fkirc/skip-duplicate-actions/actions/runs/263149724`.
+- **Traceable success propagation:** Usually, you will see a message like `Skip execution because the exact same files have been successfully checked in https://github.com/fkirc/skip-duplicate-actions/actions/runs/263149724`.
+- **Traceable failure propagation:** If failure is inevitable, then you will see a message like `Trigger a failure because https://github.com/fkirc/skip-duplicate-actions/actions/runs/263149724 has already failed with the exact same files. You can use 'workflow_dispatch' to manually enforce a re-run`.
+- **Skip concurrent workflow-runs:** If the exact same workflow is triggered twice, then one of them will be skipped.
+  For example, this can happen if a workflow has both `push` and `pull_request` triggers.
 - **Respect manual triggers:** If you manually trigger a workflow with `workflow_dispatch`, then the workflow-run will not be skipped.
 - **Flexible workflows:** `skip-duplicate-actions` does not care whether you use fast-forward-merges, rebase-merges or squash-merges.
   However, if a merge yields a result that is different from the feature branch, then the resulting workflow-run will _not_ be skipped.
@@ -26,6 +29,7 @@ When you push changes to a branch, then `skip-duplicate-actions` will cancel any
 
 - **Full traceability:** If a workflow-run is cancelled, then you will see a message like `Cancel https://github.com/fkirc/skip-duplicate-actions/actions/runs/263149724 because it runs against an outdated commit on branch 'master'.`.
 - **Battle-tested:** Most of the implementation is from https://github.com/styfle/cancel-workflow-action.
+- **Guaranteed execution:** Despite the underlying complexity, the cancellation algorithm guarantees that at least one workflow will finish no matter what.
 
 ## Inputs
 
