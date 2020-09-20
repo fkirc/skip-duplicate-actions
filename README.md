@@ -28,20 +28,24 @@ If this is `false`, then we should _not_ skip subsequent steps in a workflow.
 
 ## Example usage
 
-Typically, you will want to add `skip-duplicate-action-runs` as the first step in a workflow:
+Typically, you will want to add `skip-duplicate-action-runs` as the first step in a Job:
 
 ```yml
 jobs:
-  my_job:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: fkirc/skip-duplicate-action-runs@master
+        id: skip
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+      - if: ${{ steps.skip.outputs.should_skip == 'false' }}
+        run: |
+          echo "Running slow tests..."
+          echo "Do other stuff..."
 ```
 
 ## How does it work?
 
 `skip-duplicate-action-runs` uses the [Workflow Runs API](https://docs.github.com/en/rest/reference/actions#workflow-runs) to query previous Action-runs and their tree hashes.
 If we find two Action-runs with the same tree hashes and the same workflow files, then we have identified a duplicate Action-run.
-
