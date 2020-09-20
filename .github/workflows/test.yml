@@ -44,4 +44,7 @@ jobs:
         with:
           github_token: ${{ github.token }}
           cancel_others: 'false'
-      - run: echo "Running slow tests..." && sleep 30
+          cancel_self: 'false'
+      - if: ${{ steps.skip.outputs.should_skip == 'false' }}
+        run: |
+          echo "Running slow tests..." && sleep 30
