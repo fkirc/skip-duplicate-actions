@@ -24,6 +24,7 @@ jobs:
         id: skip
         with:
           github_token: ${{ github.token }}
+          cancellation_enabled: 'false'
       - if: ${{ steps.skip.outputs.should_skip == 'false' }}
         run: |
           echo "Running slow stuff..." && sleep 32
