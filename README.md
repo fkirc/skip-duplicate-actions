@@ -12,8 +12,21 @@ A duplicate Action-run happens if an Action has successfully passed on a feature
 - **Flexible workflows:** `skip-duplicate-action-runs` does not care whether you use fast-forward-merges, rebase-merges or squash-merges.
   However, if a merge yields a result that is different from the feature branch, then the resulting Action-run will _not_ be skipped.
   This is commonly the case if you merge "outdated branches".
+  
+## Inputs
 
-## Usage
+### `github_token`
+
+**Required** Your access token for GitHub. Should be set to `${{ secrets.GITHUB_TOKEN }}`.
+
+## Outputs
+
+### `is_duplicate`
+
+Indicates whether the current Action-run is a duplicate Action-run.
+If this is `false`, then we should _not_ skip subsequent steps in a workflow.
+
+## Example usage
 
 Typically, you will want to add `skip-duplicate-action-runs` as the first step in a workflow:
 
