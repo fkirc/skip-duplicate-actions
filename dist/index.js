@@ -5736,31 +5736,36 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__webpack_require__(186));
 const github = __importStar(__webpack_require__(438));
+function parseWorkflowRun(run) {
+    var _a, _b, _c;
+    const treeHash = (_a = run.head_commit) === null || _a === void 0 ? void 0 : _a.tree_id;
+    if (!treeHash) {
+        logFatal(`Could not find the tree hash of run ${run}`);
+    }
+    const workflowId = run.workflow_id;
+    if (!workflowId) {
+        logFatal(`Could not find the workflow id of run ${run}`);
+    }
+    return {
+        treeHash,
+        status: run.status,
+        conclusion: (_b = run.conclusion) !== null && _b !== void 0 ? _b : null,
+        html_url: run.html_url,
+        branch: (_c = run.head_branch) !== null && _c !== void 0 ? _c : null,
+        runId: run.id,
+        workflowId,
+        createdAt: run.created_at,
+    };
+}
 function filterWorkflowRuns(response, currentRun) {
     const rawWorkflowRuns = response.workflow_runs.filter((run) => {
-        if (!run.head_commit) {
-            logFatal(`Run ${run} does not have a HEAD commit`);
-        }
-        return new Date(run.created_at).getTime() < new Date(currentRun.created_at).getTime();
+        return new Date(run.created_at).getTime() < new Date(currentRun.createdAt).getTime();
     });
     return rawWorkflowRuns.map((run) => {
-        var _a, _b;
-        const treeHash = run.head_commit.tree_id;
-        if (!treeHash) {
-            logFatal("Received a run without a tree hash");
-        }
-        return {
-            treeHash,
-            status: run.status,
-            conclusion: (_a = run.conclusion) !== null && _a !== void 0 ? _a : null,
-            html_url: run.html_url,
-            branch: (_b = run.head_branch) !== null && _b !== void 0 ? _b : null,
-            runId: run.id,
-        };
+        return parseWorkflowRun(run);
     });
 }
 async function main() {
-    var _a;
     const token = core.getInput('github_token', { required: true });
     if (!token) {
         logFatal("Did not find github_token");
@@ -5784,58 +5789,56 @@ async function main() {
         repo: repoName,
         run_id: runId,
     });
-    const currentWorkflowId = current_run.workflow_id;
-    if (!currentWorkflowId) {
-        logFatal("Did not find the current workflow id");
-    }
-    const currentTreeHash = current_run.head_commit.tree_id;
-    if (!currentTreeHash) {
-        logFatal(`Did not find the current tree hash for current run ${current_run}`);
-    }
-    const currentBranch = (_a = current_run.head_branch) !== null && _a !== void 0 ? _a : null;
+    const currentRun = parseWorkflowRun(current_run);
     const { data } = await octokit.actions.listWorkflowRuns({
         owner: repoOwner,
         repo: repoName,
-        workflow_id: currentWorkflowId,
+        workflow_id: currentRun.workflowId,
         per_page: 100,
     });
-    const workflowRuns = filterWorkflowRuns(data, current_run);
-    const cancelVictims = workflowRuns.filter((run) => {
-        if (run.status === 'completed') {
-            return false;
-        }
-        return run.treeHash !== currentTreeHash && run.branch === currentBranch;
-    });
-    await cancelOutdatedRuns({
-        cancelVictims,
-        octokit,
+    const otherRuns = filterWorkflowRuns(data, currentRun);
+    const context = {
         repoOwner,
         repoName,
-    });
-    const duplicateRuns = workflowRuns.filter((run) => run.treeHash === currentTreeHash);
+        currentRun,
+        otherRuns,
+        octokit,
+    };
+    await cancelOutdatedRuns(context);
+    const duplicateRuns = otherRuns.filter((run) => run.treeHash === currentRun.treeHash);
     detectDuplicateRunsAndExit(duplicateRuns);
 }
-async function cancelOutdatedRuns(args) {
+async function cancelOutdatedRuns(context) {
     const cancellationEnabled = getBooleanInput('cancellation_enabled', true);
     if (!cancellationEnabled) {
         return core.info(`Skip cancellation because 'cancellation_enabled' is set to false`);
     }
-    if (!args.cancelVictims.length) {
+    const currentRun = context.currentRun;
+    const cancelVictims = context.otherRuns.filter((run) => {
+        if (run.status === 'completed') {
+            return false;
+        }
+        return run.treeHash !== currentRun.treeHash && run.branch === currentRun.branch;
+    });
+    if (!cancelVictims.length) {
         return core.info(`Did not find any suitable cancellation targets`);
     }
-    for (const victim of args.cancelVictims) {
-        try {
-            const res = await args.octokit.actions.cancelWorkflowRun({
-                owner: args.repoOwner,
-                repo: args.repoName,
-                run_id: victim.runId,
-            });
-            core.info(`Cancelled run ${victim.html_url} with response code ${res.status}`);
-        }
-        catch (e) {
-            core.warning(e);
-            core.warning(`Failed to cancel run ${victim.html_url}`);
-        }
+    for (const victim of cancelVictims) {
+        await cancelWorkflowRun(victim, context);
+    }
+}
+async function cancelWorkflowRun(run, context) {
+    try {
+        const res = await context.octokit.actions.cancelWorkflowRun({
+            owner: context.repoOwner,
+            repo: context.repoName,
+            run_id: run.runId,
+        });
+        core.info(`Cancelled ${run.html_url} with response code ${res.status}`);
+    }
+    catch (e) {
+        core.warning(e);
+        core.warning(`Failed to cancel ${run.html_url}`);
     }
 }
 function detectDuplicateRunsAndExit(duplicateRuns) {

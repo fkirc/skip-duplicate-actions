@@ -2,13 +2,13 @@
 
 `skip-duplicate-actions` provides two separate features for [GitHub Actions](https://github.com/features/actions):
 
-- [Detect duplicate workflow-runs](#detect-duplicate-workflow-runs) after merges or pull requests.
+- [Skip duplicate workflow-runs](#skip-duplicate-workflow-runs) after merges or pull requests.
 - [Cancel outdated workflow-runs](#cancel-outdated-workflow-runs) after branch-pushes.
 
 Both features help to save time and costs; especially for long-running workflows.
 You can choose either one or both of those features.
 
-## Detect duplicate workflow-runs
+## Skip duplicate workflow-runs
 
 If you work with feature branches, then you might see lots of _duplicate workflow-runs_.
 For example, duplicate workflow-runs can happen if a workflow runs on a feature branch, but then the workflow is repeated right after merging the feature branch.
@@ -28,7 +28,6 @@ For example, duplicate workflow-runs can happen if a workflow runs on a feature 
 When you push changes to a branch, then `skip-duplicate-actions` will cancel any previous workflow-runs that run against outdated commits.
 
 - **Full traceability:** If a workflow-run is cancelled, then you will see a message like `Cancelled https://github.com/fkirc/skip-duplicate-actions/actions/runs/263149724 because it runs against an outdated commit on branch 'master'`.
-- **Battle-tested:** Most of the implementation is from https://github.com/styfle/cancel-workflow-action.
 - **Guaranteed execution:** Despite the underlying complexity, the cancellation algorithm guarantees that a complete check-set will finish no matter what.
 
 ## Inputs
