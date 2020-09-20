@@ -100,7 +100,7 @@ async function main() {
   await cancelOutdatedRuns(context);
 
   const duplicateRuns = otherRuns.filter((run) => run.treeHash === currentRun.treeHash);
-  detectDuplicateRunsAndExit(duplicateRuns);
+  detectDuplicateRunsAndExit(duplicateRuns, context);
 }
 
 async function cancelOutdatedRuns(context: WRunContext,) {
@@ -137,24 +137,24 @@ async function cancelWorkflowRun(run: WorkflowRun, context: WRunContext) {
   }
 }
 
-function detectDuplicateRunsAndExit(duplicateRuns: WorkflowRun[]): never {
+async function detectDuplicateRunsAndExit(duplicateRuns: WorkflowRun[], context: WRunContext) {
   if (github.context.eventName === 'workflow_dispatch') {
     core.info("Do not skip execution because the workflow was triggered with workflow_dispatch");
-    exitSuccess({ shouldSkip: false});
+    await exitSuccess({ shouldSkip: false, context});
   }
   const successfulDuplicate = duplicateRuns.find((run) => {
     return run.status === 'completed' && run.conclusion === 'success';
   });
   if (successfulDuplicate) {
     core.info(`Skip execution because the exact same files have been successfully checked in ${successfulDuplicate.html_url}`);
-    exitSuccess({ shouldSkip: true});
+    await exitSuccess({ shouldSkip: true, context});
   }
   const concurrentDuplicate = duplicateRuns.find((run) => {
     return run.status !== 'completed';
   });
   if (concurrentDuplicate) {
     core.info(`Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`);
-    exitSuccess({ shouldSkip: true});
+    await exitSuccess({ shouldSkip: true, context});
   }
   const failedDuplicate = duplicateRuns.find((run) => {
     return run.status === 'completed' && run.conclusion === 'failure';
@@ -163,7 +163,24 @@ function detectDuplicateRunsAndExit(duplicateRuns: WorkflowRun[]): never {
     logFatal(`Trigger a failure because ${failedDuplicate.html_url} has already failed with the exact same files. You can use 'workflow_dispatch' to manually enforce a re-run.`);
   }
   core.info("Do not skip execution because we did not find a duplicate run");
-  exitSuccess({ shouldSkip: false});
+  await exitSuccess({ shouldSkip: false, context});
+}
+
+async function exitSuccess(args: { shouldSkip: boolean, context: WRunContext }): Promise<never> {
+  const selfCancel = getBooleanInput("self_cancel", true);
+  core.setOutput("should_skip", args.shouldSkip);
+  if (selfCancel) {
+    await doSelfCancel(args.context);
+  }
+  return process.exit(0) as never;
+}
+
+async function doSelfCancel(context: WRunContext) {
+  core.info("Waiting for self-cancellation...");
+  await cancelWorkflowRun(context.currentRun, context);
+  const waitMillis = 10000;
+  await sleep(waitMillis);
+  core.warning(`Did not receive a self-cancellation after ${waitMillis} milliseconds...`);
 }
 
 function getBooleanInput(name: string, defaultValue: boolean): boolean {
@@ -178,14 +195,13 @@ function getBooleanInput(name: string, defaultValue: boolean): boolean {
   }
 }
 
-function exitSuccess(args: { shouldSkip: boolean }): never {
-  core.setOutput("should_skip", args.shouldSkip);
-  return process.exit(0) as never;
-}
-
 function logFatal(msg: string): never {
   core.setFailed(msg);
   return process.exit(1) as never;
+}
+
+function sleep(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 main().catch((e) => {
