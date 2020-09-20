@@ -75,7 +75,7 @@ jobs:
     if: ${{ needs.pre_job.outputs.should_skip == 'false' }}
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Running slow tests..." && sleep 30
+      - run: echo "Running slow tests..." && sleep 60
 ```
 
 ### Option 2: Skip individual steps
@@ -94,7 +94,7 @@ jobs:
           github_token: ${{ github.token }}
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
-          echo "Running slow tests..." && sleep 30
+          echo "Running slow tests..." && sleep 60
           echo "Do other stuff..."
 ```
 
