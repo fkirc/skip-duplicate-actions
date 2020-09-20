@@ -15,7 +15,7 @@ A duplicate workflow-run happens if a workflow has successfully passed on a feat
 `skip-duplicate-action-runs` helps to prevent such unnecessary runs.
 
 - **Full traceability:** If a duplicate workflow-run is detected, then you will see a message like `Skip execution because the exact same files have been successfully checked in https://github.com/fkirc/skip-duplicate-action-runs/actions/runs/263149724`.
-- **Respect manual triggers:** If you manually trigger an workflow-run with `workflow_dispatch`, then the workflow-run will not be skipped.
+- **Respect manual triggers:** If you manually trigger a workflow with `workflow_dispatch`, then the workflow-run will not be skipped.
 - **Flexible workflows:** `skip-duplicate-action-runs` does not care whether you use fast-forward-merges, rebase-merges or squash-merges.
   However, if a merge yields a result that is different from the feature branch, then the resulting workflow-run will _not_ be skipped.
   This is commonly the case if you merge "outdated branches".
