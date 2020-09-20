@@ -4,7 +4,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: fkirc/skip-duplicate-actions@invalid-FJof
+      - uses: fkirc/skip-duplicate-actions@HEAD
         id: skip
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
