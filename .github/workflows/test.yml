@@ -26,4 +26,4 @@ jobs:
           github_token: ${{ github.token }}
       - if: ${{ steps.skip.outputs.should_skip == 'false' }}
         run: |
-          echo "Running slow stuff..." && sleep 55
+          echo "Running slow stuff..." && sleep 56
