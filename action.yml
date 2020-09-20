@@ -8,13 +8,18 @@ inputs:
   github_token:
     description: 'Your GitHub Access Token'
     required: true
-  cancellation_enabled:
-    description: 'Enable or disable the cancellation feature'
+  cancel_others:
+    description: 'If true, then workflow-runs from outdated commits will be cancelled'
     required: false
     default: 'true'
+  cancel_self:
+    description: 'If true, then the workflow will cancel itself if a duplicate workflow-run was found'
+    required: false
+    default: 'true'
+
 outputs:
   should_skip:
-    description: 'true if a duplicate workflow-run was found, false otherwise'
+    description: 'true if a duplicate workflow-run was found, false otherwise. This is only relevant if cancel_self is false.'
 runs:
   using: 'node12'
   main: 'dist/index.js'

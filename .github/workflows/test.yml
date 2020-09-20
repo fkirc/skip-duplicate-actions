@@ -32,4 +32,5 @@ jobs:
         uses: ./ # Uses this action in the root directory
         with:
           github_token: ${{ github.token }}
+          cancellation_enabled: 'false'
       - run: echo "Running slow tests..." && sleep 32
