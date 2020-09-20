@@ -109,7 +109,7 @@ async function cancelOutdatedRuns(args: {
     return core.info(`Skip cancellation because 'cancellation_enabled' is set to false`);
   }
   if (!args.cancelVictims.length) {
-    return core.info(`Skip cancellation because we did not find any suitable cancellation targets`);
+    return core.info(`Did not find any suitable cancellation targets`);
   }
   for (const victim of args.cancelVictims) {
     try {
@@ -128,7 +128,7 @@ async function cancelOutdatedRuns(args: {
 
 function detectDuplicateRunsAndExit(duplicateRuns: WorkflowRun[]): never {
   if (github.context.eventName === 'workflow_dispatch') {
-    core.info("Do not skip execution because the workflow was triggered with workflow_dispatch.");
+    core.info("Do not skip execution because the workflow was triggered with workflow_dispatch");
     exitSuccess({ shouldSkip: false});
   }
   const successfulDuplicate = duplicateRuns.find((run) => {
@@ -151,7 +151,7 @@ function detectDuplicateRunsAndExit(duplicateRuns: WorkflowRun[]): never {
   if (failedDuplicate) {
     logFatal(`Trigger a failure because ${failedDuplicate.html_url} has already failed with the exact same files. You can use 'workflow_dispatch' to manually enforce a re-run.`);
   }
-  core.info("Do not skip execution because we did not find a duplicate run.");
+  core.info("Do not skip execution because we did not find a duplicate run");
   exitSuccess({ shouldSkip: false});
 }
 
