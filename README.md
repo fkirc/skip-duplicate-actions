@@ -24,7 +24,7 @@ A duplicate Action-run happens if an Action has successfully passed on a feature
   
 ## Cancel outdated Action-runs
 
-When you push changes to a branch, then this feature will cancel any previous Action-runs that run against outdated commits.
+When you push changes to a branch, then `skip-duplicate-action-runs` will cancel any previous Action-runs that run against outdated commits.
 This ensures that GitHub's resources focus on the latest commit, instead of wasting resources for outdated commits.
 
 ### Features
@@ -36,6 +36,12 @@ This ensures that GitHub's resources focus on the latest commit, instead of wast
 ## Inputs
 
 ### `github_token`
+
+**Required** Your access token for GitHub. Should be set to `${{ secrets.GITHUB_TOKEN }}`.
+
+### `cancel_outdated_runs`
+
+Set this to `false` if you want to disable the cancellation feature. Default `true`.
 
 **Required** Your access token for GitHub. Should be set to `${{ secrets.GITHUB_TOKEN }}`.
 
