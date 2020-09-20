@@ -5,7 +5,7 @@
 - [Detect duplicate workflow-runs](#detect-duplicate-workflow-runs) after branch-merges.
 - [Cancel outdated workflow-runs](#cancel-outdated-workflow-runs) after branch-pushes.
 
-Both features help to save time and costs; especially for long-running GitHub Actions.
+Both features help to save time and costs; especially for long-running workflows.
 You can choose either one or both of those features.
 
 ## Detect duplicate workflow-runs
