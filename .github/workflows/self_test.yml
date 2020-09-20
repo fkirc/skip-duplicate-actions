@@ -8,5 +8,7 @@ jobs:
         id: skip
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-      - run: echo "Running slow tests..."
-        if: ${{ steps.skip.outputs.is_duplicate != 'true' }}
+      - if: ${{ steps.skip.outputs.is_duplicate != 'true' }}
+        run: |
+          echo "Running slow tests..."
+          echo "Do other stuff..."
