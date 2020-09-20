@@ -80,7 +80,7 @@ jobs:
 
 ### Option 2: Skip individual steps
 
-If you do not want an additional `pre_job`, you can use `skip-duplicate-actions` to skip additional steps.
+If you do not want an additional `pre_job`, then you can use `skip-duplicate-actions` to skip additional steps.
 This example demonstrates how to skip an individual step with an `if`-clause and an `id`:
 
 ```yml
