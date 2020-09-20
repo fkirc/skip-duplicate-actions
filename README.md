@@ -23,9 +23,8 @@ A duplicate workflow-run happens if a workflow has successfully passed on a feat
 ## Cancel outdated workflow-runs
 
 When you push changes to a branch, then `skip-duplicate-action-runs` will cancel any previous workflow-runs that run against outdated commits.
-This ensures that GitHub's resources focus on the latest commit, instead of wasting resources for outdated commits.
 
-- **Full traceability:** If an workflow-run is cancelled, then you will see a message like `Cancel https://github.com/fkirc/skip-duplicate-action-runs/actions/runs/263149724 because it runs against an outdated commit on branch 'master'.`.
+- **Full traceability:** If a workflow-run is cancelled, then you will see a message like `Cancel https://github.com/fkirc/skip-duplicate-action-runs/actions/runs/263149724 because it runs against an outdated commit on branch 'master'.`.
 - **Battle-tested:** Most of the implementation is from https://github.com/styfle/cancel-workflow-action.
 
 ## Inputs
@@ -43,7 +42,6 @@ Set this to `false` if you want to disable the cancellation feature. Default `tr
 ### `should_skip`
 
 Indicates whether the current workflow-run is a duplicate workflow-run.
-If this is `false`, then we should _not_ skip subsequent steps in a workflow.
 
 ## Example usage
 
@@ -66,7 +64,7 @@ jobs:
 
 ## How does it work?
 
-`skip-duplicate-action-runs` uses the [Workflow Runs API](https://docs.github.com/en/rest/reference/actions#workflow-runs) to query previous workflow-runs.
+`skip-duplicate-action-runs` uses the [Workflow Runs API](https://docs.github.com/en/rest/reference/actions#workflow-runs) to query workflow-runs.
 
 Firstly, `skip-duplicate-action-runs` will only look at workflow-runs that belong to the same workflow as the current workflow-run.
 After querying such workflow-runs, it will compare them with the current workflow-run as follows:
