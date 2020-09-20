@@ -19,7 +19,7 @@ jobs:
       # To use this repository's private action, you must check out the repository
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Test Step
+      - name: skip-duplicate-actions private checkout
         uses: ./ # Uses this action in the root directory
         with:
-          access_token: ${{ github.token }}
+          github_token: ${{ github.token }}
