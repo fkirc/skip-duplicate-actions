@@ -6,7 +6,7 @@ branding:
   color: 'white'
 inputs:
   github_token:
-    description: 'Your GitHub Access Token, ie: \${{ secrets.GITHUB_TOKEN }}'
+    description: 'Your GitHub Access Token'
     required: true
 outputs:
   should_skip:
