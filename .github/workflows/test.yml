@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   pull_request:
   schedule:
-    - cron: '* * * * *'
+    - cron: '*/5 * * * *'
 
 jobs:
   simple_usage:
