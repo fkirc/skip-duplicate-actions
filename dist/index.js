@@ -5777,6 +5777,10 @@ async function main() {
 }
 function filterWorkflowRuns(response, currentRun) {
     const rawWorkflowRuns = response.workflow_runs.filter((run) => {
+        if (!run.head_commit) {
+            core.warning(`Run ${run} does not have a HEAD commit`);
+            return false;
+        }
         return new Date(run.created_at).getTime() < new Date(currentRun.created_at).getTime();
     });
     return rawWorkflowRuns.map((run) => {
@@ -5822,6 +5826,7 @@ function detectDuplicateWorkflowsAndExit(duplicateRuns) {
 }
 main().catch((e) => {
     core.error(e);
+    console.error(e);
     logFatal(e.message);
 });
 function exitSuccess(args) {
