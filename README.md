@@ -47,7 +47,7 @@ If true, then workflow-runs from outdated commits will be cancelled. Default `tr
 
 true if the current run is a duplicate workflow-run. This should be evaluated for either individual steps or entire jobs.
 
-## Usage
+## Usage examples
 
 You can use `skip-duplicate-actions` to either skip individual steps or entire jobs.
 Which one is easier depends on your workflow.
