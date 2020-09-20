@@ -13,8 +13,6 @@ interface WorkflowRun {
 }
 
 async function main() {
-  console.log(github.context); // TODO: Remove
-
   const repo = github.context.repo;
   const repoOwner = repo?.owner;
   const repoName = repo?.repo;
@@ -28,12 +26,16 @@ async function main() {
   if (!token) {
     logFatal("Did not find github_token");
   }
+  const runId = github.context.runId;
+  if (!runId) {
+    logFatal("Did not find runId");
+  }
 
   const octokit = github.getOctokit(token);
   const { data: current_run } = await octokit.actions.getWorkflowRun({
     owner: repoOwner,
     repo: repoName,
-    run_id: github.context.runId
+    run_id: runId,
   });
   const currentWorkflowId = current_run.workflow_id;
   if (!currentWorkflowId) {
@@ -109,8 +111,8 @@ function detectDuplicateWorkflowsAndExit(duplicateRuns: WorkflowRun[]): never {
 }
 
 main().catch((e) => {
-  //core.error(e);
-  console.error(e);
+  core.error(e);
+  //console.error(e);
   logFatal(e.message);
 });
 

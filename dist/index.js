@@ -5737,7 +5737,6 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__webpack_require__(186));
 const github = __importStar(__webpack_require__(438));
 async function main() {
-    console.log(github.context);
     const repo = github.context.repo;
     const repoOwner = repo === null || repo === void 0 ? void 0 : repo.owner;
     const repoName = repo === null || repo === void 0 ? void 0 : repo.repo;
@@ -5751,11 +5750,15 @@ async function main() {
     if (!token) {
         logFatal("Did not find github_token");
     }
+    const runId = github.context.runId;
+    if (!runId) {
+        logFatal("Did not find runId");
+    }
     const octokit = github.getOctokit(token);
     const { data: current_run } = await octokit.actions.getWorkflowRun({
         owner: repoOwner,
         repo: repoName,
-        run_id: github.context.runId
+        run_id: runId,
     });
     const currentWorkflowId = current_run.workflow_id;
     if (!currentWorkflowId) {
@@ -5825,7 +5828,7 @@ function detectDuplicateWorkflowsAndExit(duplicateRuns) {
     exitSuccess({ shouldSkip: false });
 }
 main().catch((e) => {
-    console.error(e);
+    core.error(e);
     logFatal(e.message);
 });
 function exitSuccess(args) {
