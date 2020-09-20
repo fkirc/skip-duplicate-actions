@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # To use this repository's private action, you must check out the repository
+      - run: echo "Pre-test waiting..." && sleep 20
       - name: Checkout
         uses: actions/checkout@v2
       - name: skip-duplicate-actions private checkout
@@ -26,4 +27,4 @@ jobs:
           github_token: ${{ github.token }}
       - if: ${{ steps.skip.outputs.should_skip == 'false' }}
         run: |
-          echo "Running slow stuff..." && sleep 57
+          echo "Running slow stuff..." && sleep 40
