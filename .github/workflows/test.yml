@@ -1,12 +1,20 @@
 on: [push, workflow_dispatch, pull_request]
 
 jobs:
-  simple_usage:
+  pre_job:
     runs-on: ubuntu-latest
+    # Map a step output to a job output
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
     steps:
-      - uses: fkirc/skip-duplicate-actions@master
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@master
         with:
           github_token: ${{ github.token }}
+
+  simple_usage:
+    if: ${{ needs.pre_job.outputs.should_skip == 'false' }}
+    runs-on: ubuntu-latest
       - run: echo "Running slow tests..." && sleep 30
 
   advanced_usage:
