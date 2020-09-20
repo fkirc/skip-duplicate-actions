@@ -9,4 +9,4 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
       - run: echo "Did not skip execution for output ${{ steps.skip.outputs.is_duplicate }}"
-        if: ${{ ! steps.skip.outputs.is_duplicate }}
+        if: ${{ steps.skip.outputs.is_duplicate != 'true' }}
