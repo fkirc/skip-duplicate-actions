@@ -8,7 +8,7 @@ A duplicate Action-run happens if an Action has successfully passed on a feature
 
 - **Full traceability:** If an Action-run is skipped, then you will see a message like `Skip execution because the exact same files have been successfully checked in https://github.com/fkirc/skip-duplicate-action-runs/actions/runs/263149724`.
   To see those successful checks, you only need to follow the link.
-- **Respect manual triggers:** If you manually trigger an Action-run with `workflow_dispatch`, then the Action-run will be never skipped.
+- **Respect manual triggers:** If you manually trigger an Action-run with `workflow_dispatch`, then the Action-run will not be skipped.
 - **Flexible workflows:** `skip-duplicate-action-runs` does not care whether you use fast-forward-merges, rebase-merges or squash-merges.
   However, if a merge yields a result that is different from the feature branch, then the resulting Action-run will _not_ be skipped.
   This is commonly the case if you merge "outdated branches".
