@@ -13,6 +13,7 @@ jobs:
           github_token: ${{ github.token }}
 
   simple_usage:
+    needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip == 'false' }}
     runs-on: ubuntu-latest
     steps:
