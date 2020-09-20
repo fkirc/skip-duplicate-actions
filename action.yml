@@ -10,7 +10,7 @@ inputs:
     required: true
 outputs:
   should_skip:
-    description: 'true if a duplicate Action-run was found, false otherwise.'
+    description: 'true if a duplicate workflow-run was found, false otherwise.'
 runs:
   using: 'node12'
   main: 'dist/index.js'
