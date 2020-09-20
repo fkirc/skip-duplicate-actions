@@ -14,10 +14,7 @@ interface WorkflowRun {
 
 async function main() {
   console.log(github.context); // TODO: Remove
-  const currentTreeHash: string = github.context?.payload?.head_commit?.tree_id;
-  if (!currentTreeHash) {
-    logFatal(`Did not find the current tree hash in context ${github.context}`);
-  }
+
   const repo = github.context.payload.repository;
   const repoOwner = repo?.owner?.name;
   const repoName = repo?.name;
@@ -41,6 +38,10 @@ async function main() {
   const currentWorkflowId = current_run.workflow_id;
   if (!currentWorkflowId) {
     logFatal("Did not find the current workflow id");
+  }
+  const currentTreeHash = current_run.head_commit.tree_id;
+  if (!currentTreeHash) {
+    logFatal(`Did not find the current tree hash for current run ${current_run}`);
   }
 
   const { data } = await octokit.actions.listWorkflowRuns({
