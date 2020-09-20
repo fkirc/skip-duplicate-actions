@@ -47,36 +47,52 @@ If true, then workflow-runs from outdated commits will be cancelled. Default `tr
 
 true if the current run is a duplicate workflow-run. This should be evaluated for either individual steps or entire jobs.
 
-## Simple usage
+## Usage
 
-If you do not worry about self-cancellations, then it is easy to throw `skip-duplicate-actions` into your own workflow.
-Typically, you will want to add `skip-duplicate-actions` as the first step in a Job:
+You can use `skip-duplicate-actions` to either skip individual steps or entire jobs.
+Which one is easier depends on your workflow.
+
+## Skip entire jobs
+
+To skip entire jobs, you will need a `pre_job` that acts as a pre-condition for your `main_job`.
+Although this example looks like a lot of code, there are only two additional lines in your project-specific `main_job` (the `needs`-clause and the `if`-clause):
 
 ```yml
 jobs:
-  simple_usage:
+  pre_job:
     runs-on: ubuntu-latest
+    # Map a step output to a job output
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
     steps:
-      - uses: fkirc/skip-duplicate-actions@master
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@master
         with:
           github_token: ${{ github.token }}
+
+  main_job:
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip == 'false' }}
+    runs-on: ubuntu-latest
+    steps:
       - run: echo "Running slow tests..." && sleep 30
 ```
 
-## Advanced usage
+## Skip individual steps
 
-Typically, you will use `if`-conditions and an `id` to evaluate the `should_skip`-output:
+If you do not want an additional `pre_job`, you can use `skip-duplicate-actions` to skip additional steps.
+This example demonstrates how to skip an individual step with an `if`-clause and an `id`:
 
 ```yml
 jobs:
-  advanced_usage:
+  skip_individual_steps_job:
     runs-on: ubuntu-latest
     steps:
-      - uses: fkirc/skip-duplicate-actions@master
-        id: skip
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@master
         with:
           github_token: ${{ github.token }}
-      - if: ${{ steps.skip.outputs.should_skip == 'false' }}
+      - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
           echo "Running slow tests..." && sleep 30
           echo "Do other stuff..."
