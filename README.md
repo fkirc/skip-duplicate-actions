@@ -52,7 +52,7 @@ true if the current run is a duplicate workflow-run. This should be evaluated fo
 You can use `skip-duplicate-actions` to either skip individual steps or entire jobs.
 Which one is easier depends on your workflow.
 
-## Skip entire jobs
+### Option 1: Skip entire jobs
 
 To skip entire jobs, you will need a `pre_job` that acts as a pre-condition for your `main_job`.
 Although this example looks like a lot of code, there are only two additional lines in your project-specific `main_job` (the `needs`-clause and the `if`-clause):
@@ -78,7 +78,7 @@ jobs:
       - run: echo "Running slow tests..." && sleep 30
 ```
 
-## Skip individual steps
+### Option 2: Skip individual steps
 
 If you do not want an additional `pre_job`, you can use `skip-duplicate-actions` to skip additional steps.
 This example demonstrates how to skip an individual step with an `if`-clause and an `id`:
