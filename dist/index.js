@@ -5737,13 +5737,13 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__webpack_require__(186));
 const github = __importStar(__webpack_require__(438));
 async function main() {
-    var _a;
-    const currentTreeHash = github.context.payload.head_commit.tree_id;
+    var _a, _b, _c, _d;
+    const currentTreeHash = (_c = (_b = (_a = github.context) === null || _a === void 0 ? void 0 : _a.payload) === null || _b === void 0 ? void 0 : _b.head_commit) === null || _c === void 0 ? void 0 : _c.tree_id;
     if (!currentTreeHash) {
-        logFatal("Did not find the current tree hash");
+        logFatal(`Did not find the current tree has in context ${github.context}`);
     }
     const repo = github.context.payload.repository;
-    const repoOwner = (_a = repo === null || repo === void 0 ? void 0 : repo.owner) === null || _a === void 0 ? void 0 : _a.name;
+    const repoOwner = (_d = repo === null || repo === void 0 ? void 0 : repo.owner) === null || _d === void 0 ? void 0 : _d.name;
     const repoName = repo === null || repo === void 0 ? void 0 : repo.name;
     if (!repoOwner) {
         logFatal("Did not find the repo owner");
