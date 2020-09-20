@@ -5820,7 +5820,7 @@ function detectDuplicateWorkflowsAndExit(duplicateRuns) {
         return run.status === 'completed' && run.conclusion === 'failure';
     });
     if (failedDuplicate) {
-        logFatal(`Trigger a failure because ${failedDuplicate.html_url} has failed with the exact same files. You can use 'workflow_dispatch' to manually enforce a re-run.`);
+        logFatal(`Trigger a failure because ${failedDuplicate.html_url} has already failed with the exact same files. You can use 'workflow_dispatch' to manually enforce a re-run.`);
     }
     core.info("Do not skip execution because we did not find a duplicate run.");
     exitSuccess({ shouldSkip: false });
