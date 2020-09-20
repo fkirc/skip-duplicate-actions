@@ -16,7 +16,6 @@ A duplicate Action-run happens if an Action has successfully passed on a feature
 ### Features
 
 - **Full traceability:** If a duplicate Action-run is detected, then you will see a message like `Skip execution because the exact same files have been successfully checked in https://github.com/fkirc/skip-duplicate-action-runs/actions/runs/263149724`.
-  To see those successful checks, you only need to follow the link.
 - **Respect manual triggers:** If you manually trigger an Action-run with `workflow_dispatch`, then the Action-run will not be skipped.
 - **Flexible workflows:** `skip-duplicate-action-runs` does not care whether you use fast-forward-merges, rebase-merges or squash-merges.
   However, if a merge yields a result that is different from the feature branch, then the resulting Action-run will _not_ be skipped.
@@ -29,8 +28,7 @@ This ensures that GitHub's resources focus on the latest commit, instead of wast
 
 ### Features
 
-- **Auto-configuration:** `skip-duplicate-action-runs` captures the current branch and workflow.
-  It will only cancel outdated Action-runs that belong to the _same_ branch and to the _same_ workflow.
+- **Full traceability:** If an Action-run is cancelled, then you will see a message like `Cancel https://github.com/fkirc/skip-duplicate-action-runs/actions/runs/263149724 because it runs against an outdated commit on branch 'master'.`.
 - **Battle-tested:** Most of the implementation is from https://github.com/styfle/cancel-workflow-action.
 
 ## Inputs
