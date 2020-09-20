@@ -1,26 +1,41 @@
 on: [push, workflow_dispatch, pull_request]
 
 jobs:
-  simple_usage:
+  pre_job:
     runs-on: ubuntu-latest
+    # Map a step output to a job output
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
     steps:
-      - uses: fkirc/skip-duplicate-actions@master
-        with:
-          github_token: ${{ github.token }}
-      - run: echo "Running slow tests..." && sleep 30
-
-  advanced_usage:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: fkirc/skip-duplicate-actions@master
-        id: skip
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@master
         with:
           github_token: ${{ github.token }}
           cancel_self: 'false'
-      - if: ${{ steps.skip.outputs.should_skip == 'false' }}
+
+  main_job:
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip == 'false' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Running slow tests..." && sleep 30
+
+
+
+  skip_individual_steps_job:
+    runs-on: ubuntu-latest
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@master
+        with:
+          github_token: ${{ github.token }}
+          cancel_self: 'false'
+      - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
           echo "Running slow tests..." && sleep 30
           echo "Do other stuff..."
+
+
 
   private_action:
     runs-on: ubuntu-latest
@@ -28,9 +43,12 @@ jobs:
       # To use the Action from the current branch, we checkout the repository
       - name: Checkout
         uses: actions/checkout@v2
-      - name: skip-duplicate-actions
+      - id: skip_check
         uses: ./ # Uses this Action in the root directory
         with:
           github_token: ${{ github.token }}
           cancel_others: 'false'
-      - run: echo "Running slow tests..." && sleep 30
+          cancel_self: 'false'
+      - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
+        run: |
+          echo "Running slow tests..." && sleep 30
