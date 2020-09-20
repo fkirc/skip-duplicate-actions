@@ -71,8 +71,8 @@ jobs:
 `skip-duplicate-actions` uses the [Workflow Runs API](https://docs.github.com/en/rest/reference/actions#workflow-runs) to query workflow-runs.
 
 Firstly, `skip-duplicate-actions` will only look at workflow-runs that belong to the same workflow as the current workflow-run.
-Secondly, `skip-duplicate-actions` ignores all future workflow-runs in order to guard against race conditions and edge cases.
+Secondly, `skip-duplicate-actions` will only look at _older_ workflow-runs in order to guard against race conditions and edge cases.
 After querying such workflow-runs, it will compare them with the current workflow-run as follows:
 
-- If there exists another workflow-runs with the same tree hash, then we have identified a duplicate workflow-run.
-- If there exists an older in-progress workflow-run that matches the current branch but not the current tree hash, then this workflow-run will be cancelled.
+- If there exists a workflow-runs with the same tree hash, then we have identified a duplicate workflow-run.
+- If there exists an in-progress workflow-run that matches the current branch but not the current tree hash, then this workflow-run will be cancelled.

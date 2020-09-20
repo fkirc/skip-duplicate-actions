@@ -10,5 +10,5 @@ jobs:
           github_token: ${{ github.token }}
       - if: ${{ steps.skip.outputs.should_skip == 'false' }}
         run: |
-          echo "Running slow tests..."
+          echo "Running slow tests..." && sleep 60
           echo "Do other stuff..."
