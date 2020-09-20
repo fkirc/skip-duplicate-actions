@@ -1,29 +1,35 @@
 on: [push, workflow_dispatch, pull_request]
 
 jobs:
-  test:
+  simple_usage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: fkirc/skip-duplicate-actions@master
+        with:
+          github_token: ${{ github.token }}
+      - run: echo "Running slow tests..." && sleep 30
+
+  advanced_usage:
     runs-on: ubuntu-latest
     steps:
       - uses: fkirc/skip-duplicate-actions@master
         id: skip
         with:
           github_token: ${{ github.token }}
+          self_cancel: 'false'
       - if: ${{ steps.skip.outputs.should_skip == 'false' }}
         run: |
           echo "Running slow tests..." && sleep 32
           echo "Do other stuff..."
 
-  private_test:
+  private_action:
     runs-on: ubuntu-latest
     steps:
       # To use this repository's private action, we checkout the repository
       - name: Checkout
         uses: actions/checkout@v2
-      - name: skip-duplicate-actions private checkout
+      - name: skip-duplicate-actions
         uses: ./ # Uses this action in the root directory
-        id: skip
         with:
           github_token: ${{ github.token }}
-      - if: ${{ steps.skip.outputs.should_skip == 'false' }}
-        run: |
-          echo "Running slow stuff..." && sleep 32
+      - run: echo "Running slow tests..." && sleep 32
