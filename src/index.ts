@@ -17,8 +17,7 @@ interface WorkflowRun {
 function filterWorkflowRuns(response: ActionsListWorkflowRunsResponseData, currentRun: ActionsGetWorkflowRunResponseData): WorkflowRun[] {
   const rawWorkflowRuns = response.workflow_runs.filter((run) => {
     if (!run.head_commit) {
-      core.warning(`Run ${run} does not have a HEAD commit`);
-      return false;
+      logFatal(`Run ${run} does not have a HEAD commit`);
     }
     // Only consider older workflow-runs to prevent some nasty race conditions and edge cases.
     return new Date(run.created_at).getTime() < new Date(currentRun.created_at).getTime();

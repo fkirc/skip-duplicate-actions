@@ -5739,8 +5739,7 @@ const github = __importStar(__webpack_require__(438));
 function filterWorkflowRuns(response, currentRun) {
     const rawWorkflowRuns = response.workflow_runs.filter((run) => {
         if (!run.head_commit) {
-            core.warning(`Run ${run} does not have a HEAD commit`);
-            return false;
+            logFatal(`Run ${run} does not have a HEAD commit`);
         }
         return new Date(run.created_at).getTime() < new Date(currentRun.created_at).getTime();
     });
