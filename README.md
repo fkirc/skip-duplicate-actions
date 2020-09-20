@@ -1,6 +1,6 @@
 # Skip Duplicate Action Runs
 
-`skip-duplicate-action-runs` provides two separate functionalities for [GitHub Actions](https://github.com/features/actions):
+`skip-duplicate-action-runs` provides two separate features for [GitHub Actions](https://github.com/features/actions):
 
 - [Detect duplicate Action-runs](#detect-duplicate-action-runs) after branch-merges.
 - [Cancel outdated Action-runs](#cancel-outdated-action-runs) after branch-pushes.
