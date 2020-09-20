@@ -13,6 +13,7 @@ interface WorkflowRun {
 }
 
 async function main() {
+  console.log(github.context); // TODO: Remove
   const currentTreeHash: string = github.context?.payload?.head_commit?.tree_id;
   if (!currentTreeHash) {
     logFatal(`Did not find the current tree hash in context ${github.context}`);

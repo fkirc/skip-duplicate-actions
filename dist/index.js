@@ -5738,6 +5738,7 @@ const core = __importStar(__webpack_require__(186));
 const github = __importStar(__webpack_require__(438));
 async function main() {
     var _a, _b, _c, _d;
+    console.log(github.context);
     const currentTreeHash = (_c = (_b = (_a = github.context) === null || _a === void 0 ? void 0 : _a.payload) === null || _b === void 0 ? void 0 : _b.head_commit) === null || _c === void 0 ? void 0 : _c.tree_id;
     if (!currentTreeHash) {
         logFatal(`Did not find the current tree hash in context ${github.context}`);
