@@ -36,9 +36,13 @@ When you push changes to a branch, then `skip-duplicate-actions` will cancel any
 
 **Required** Your access token for GitHub.
 
-### `cancellation_enabled`
+### `cancel_others`
 
-Set this to `false` if you want to disable the cancellation feature. Default `true`.
+If true, then workflow-runs from outdated commits will be cancelled. Default `true`.
+
+### `cancel_self`
+
+If true, then the workflow will cancel itself if a duplicate workflow-run was found. Default `true`.
 
 ## Outputs
 

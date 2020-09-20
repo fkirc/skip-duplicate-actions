@@ -16,7 +16,7 @@ jobs:
         id: skip
         with:
           github_token: ${{ github.token }}
-          self_cancel: 'false'
+          cancel_self: 'false'
       - if: ${{ steps.skip.outputs.should_skip == 'false' }}
         run: |
           echo "Running slow tests..." && sleep 32
@@ -32,5 +32,5 @@ jobs:
         uses: ./ # Uses this action in the root directory
         with:
           github_token: ${{ github.token }}
-          cancellation_enabled: 'false'
+          cancel_others: 'false'
       - run: echo "Running slow tests..." && sleep 32

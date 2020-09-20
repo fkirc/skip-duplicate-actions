@@ -104,9 +104,9 @@ async function main() {
 }
 
 async function cancelOutdatedRuns(context: WRunContext,) {
-  const cancellationEnabled = getBooleanInput('cancellation_enabled', true);
-  if (!cancellationEnabled) {
-    return core.info(`Skip cancellation because 'cancellation_enabled' is set to false`);
+  const cancelOthers = getBooleanInput('cancel_others', true);
+  if (!cancelOthers) {
+    return core.info(`Skip cancellation because 'cancel_others' is set to false`);
   }
   const currentRun = context.currentRun;
   const cancelVictims = context.otherRuns.filter((run) => {
@@ -167,13 +167,13 @@ async function detectDuplicateRunsAndExit(duplicateRuns: WorkflowRun[], context:
 }
 
 async function exitSuccess(args: { shouldSkip: boolean, context: WRunContext }): Promise<never> {
-  const selfCancel = getBooleanInput("self_cancel", true);
+  const selfCancel = getBooleanInput("cancel_self", true);
   core.setOutput("should_skip", args.shouldSkip);
   if (args.shouldSkip) {
     if (selfCancel) {
       await doSelfCancel(args.context);
     } else {
-      core.info("Output 'should_skip' is true, but input 'self_cancel' is false. Proceed with the next step.")
+      core.info("Output 'should_skip' is true, but input 'cancel_self' is false -> Proceed with the next step.")
     }
   }
   return process.exit(0) as never;
