@@ -169,8 +169,12 @@ async function detectDuplicateRunsAndExit(duplicateRuns: WorkflowRun[], context:
 async function exitSuccess(args: { shouldSkip: boolean, context: WRunContext }): Promise<never> {
   const selfCancel = getBooleanInput("self_cancel", true);
   core.setOutput("should_skip", args.shouldSkip);
-  if (selfCancel) {
-    await doSelfCancel(args.context);
+  if (args.shouldSkip) {
+    if (selfCancel) {
+      await doSelfCancel(args.context);
+    } else {
+      core.info("Output 'should_skip' is true, but input 'self_cancel' is false. Proceed with the next step.")
+    }
   }
   return process.exit(0) as never;
 }
