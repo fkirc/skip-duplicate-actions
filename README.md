@@ -10,7 +10,7 @@ You can choose either one or both of those features.
 
 ## Detect duplicate workflow-runs
 
-If you merge lots of feature branches, then you might see lots of _duplicate workflow-runs_.
+If you work with feature branches, then you might see lots of _duplicate workflow-runs_.
 For example, duplicate workflow-runs can happen if a workflow runs on a feature branch, but then the workflow is repeated right after merging the feature branch.
 `skip-duplicate-actions` helps to prevent such unnecessary runs.
 
