@@ -5801,10 +5801,7 @@ async function main() {
     });
     const workflowRuns = filterWorkflowRuns(data, current_run);
     const cancelVictims = workflowRuns.filter((run) => {
-        if (run.treeHash === currentTreeHash) {
-            return false;
-        }
-        return run.branch === currentBranch;
+        return run.treeHash !== currentTreeHash && run.branch === currentBranch;
     });
     await cancelOutdatedRuns({
         cancelVictims,
