@@ -16,7 +16,7 @@ A duplicate workflow-run happens if a workflow has successfully passed on a feat
 
 - **Traceable success propagation:** After clean merges, you will see a message like `Skip execution because the exact same files have been successfully checked in https://github.com/fkirc/skip-duplicate-actions/actions/runs/263149724`.
 - **Traceable failure propagation:** If failure is inevitable, then you will see a message like `Trigger a failure because https://github.com/fkirc/skip-duplicate-actions/actions/runs/263149724 has already failed with the exact same files. You can use 'workflow_dispatch' to manually enforce a re-run`.
-- **Skip concurrent workflow-runs:** If the exact same workflow is triggered twice, then one of them will be skipped.
+- **Skip concurrent workflow-runs:** If the same workflow is unnecessarily triggered twice, then one of the workflow-runs will be skipped.
   For example, this can happen if a workflow has both `push` and `pull_request` triggers.
 - **Respect manual triggers:** If you manually trigger a workflow with `workflow_dispatch`, then the workflow-run will not be skipped.
 - **Flexible Git usage:** `skip-duplicate-actions` does not care whether you use fast-forward-merges, rebase-merges or squash-merges.
@@ -37,7 +37,7 @@ When you push changes to a branch, then `skip-duplicate-actions` will cancel any
 
 **Required** Your access token for GitHub.
 
-### `cancel_outdated_runs`
+### `cancellation_enabled`
 
 Set this to `false` if you want to disable the cancellation feature. Default `true`.
 
