@@ -1,4 +1,9 @@
-on: [push, workflow_dispatch, pull_request, cron: * * * * *]
+on:
+  - push
+  - workflow_dispatch
+  - pull_request
+  - schedule:
+    - cron: '* * * * *'
 
 jobs:
   simple_usage:
