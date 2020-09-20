@@ -28,7 +28,7 @@ For example, duplicate workflow-runs can happen if a workflow runs on a feature 
 Typically, workflows should only run for the most recent commit.
 Therefore, when you push changes to a branch, `skip-duplicate-actions` will cancel any previous workflow-runs that run against outdated commits.
 
-- **Full traceability:** If a workflow-run is cancelled, then you will see a message like `Cancelled https://github.com/fkirc/skip-duplicate-actions/actions/runs/263149724 because it runs against an outdated commit on branch 'master'`.
+- **Full traceability:** If a workflow-run is cancelled, then you will see a message like `Cancelled https://github.com/fkirc/skip-duplicate-actions/actions/runs/263149724`.
 - **Guaranteed execution:** Despite the underlying complexity, the cancellation algorithm guarantees that a complete check-set will finish no matter what.
 
 ## Inputs
@@ -80,8 +80,8 @@ jobs:
 
 ### Option 2: Skip individual steps
 
-If you do not want an additional `pre_job`, then you can use `skip-duplicate-actions` to skip additional steps.
-This example demonstrates how to skip an individual step with an `if`-clause and an `id`:
+If you do not want an additional `pre_job`, then you can use `skip-duplicate-actions` to skip individual steps.
+The following example demonstrates how to skip an individual step with an `if`-clause and an `id`:
 
 ```yml
 jobs:
