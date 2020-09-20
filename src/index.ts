@@ -139,7 +139,7 @@ function detectDuplicateRunsAndExit(duplicateRuns: WorkflowRun[]): never {
     exitSuccess({ shouldSkip: true});
   }
   const concurrentDuplicate = duplicateRuns.find((run) => {
-    return run.status === 'queued' || run.status === 'in_progress';
+    return run.status !== 'completed';
   });
   if (concurrentDuplicate) {
     core.info(`Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`);
