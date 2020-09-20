@@ -70,7 +70,7 @@ jobs:
 
 ## Advanced usage
 
-If you want to avoid self-cancellations, then can use `self_cancel=false` in combination with the `should_skip`-output.
+If you want to avoid self-cancellations, then you can use `self_cancel=false` in combination with the `should_skip`-output.
 Typically, you will use `if`-conditions and an `id` to evaluate the `should_skip`-output:
 
 ```yml
