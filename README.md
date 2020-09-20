@@ -31,7 +31,7 @@ When you push changes to a branch, then `skip-duplicate-actions` will cancel any
 
 ### `github_token`
 
-**Required** Your access token for GitHub. Should be set to `${{ secrets.GITHUB_TOKEN }}`.
+**Required** Your access token for GitHub.
 
 ### `cancel_outdated_runs`
 
@@ -55,7 +55,7 @@ jobs:
       - uses: fkirc/skip-duplicate-actions@master
         id: skip
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ github.token }}
       - if: ${{ steps.skip.outputs.should_skip == 'false' }}
         run: |
           echo "Running slow tests..."
