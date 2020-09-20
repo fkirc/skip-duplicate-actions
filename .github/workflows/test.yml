@@ -19,7 +19,6 @@ jobs:
       # To use this repository's private action, we checkout the repository
       - name: Checkout
         uses: actions/checkout@v2
-      - run: exit 1
       - name: skip-duplicate-actions private checkout
         uses: ./ # Uses this action in the root directory
         id: skip
