@@ -5740,7 +5740,7 @@ async function main() {
     var _a, _b, _c, _d;
     const currentTreeHash = (_c = (_b = (_a = github.context) === null || _a === void 0 ? void 0 : _a.payload) === null || _b === void 0 ? void 0 : _b.head_commit) === null || _c === void 0 ? void 0 : _c.tree_id;
     if (!currentTreeHash) {
-        logFatal(`Did not find the current tree has in context ${github.context}`);
+        logFatal(`Did not find the current tree hash in context ${github.context}`);
     }
     const repo = github.context.payload.repository;
     const repoOwner = (_d = repo === null || repo === void 0 ? void 0 : repo.owner) === null || _d === void 0 ? void 0 : _d.name;
@@ -5825,7 +5825,6 @@ function detectDuplicateWorkflowsAndExit(duplicateRuns) {
     exitSuccess({ shouldSkip: false });
 }
 main().catch((e) => {
-    core.error(e);
     console.error(e);
     logFatal(e.message);
 });
