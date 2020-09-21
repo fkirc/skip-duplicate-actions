@@ -97,6 +97,17 @@ jobs:
           echo "Do other stuff..."
 ```
 
+### Option 3: Cancellation-only
+
+If you do not care about the duplicate-skip-functionality, then you can simply ignore the `should_skip`-output.
+In this case, the integration reduces to three lines:
+
+```yml
+  - uses: fkirc/skip-duplicate-actions@master
+    with:
+      github_token: ${{ github.token }}
+```
+
 ## How does it work?
 
 `skip-duplicate-actions` uses the [Workflow Runs API](https://docs.github.com/en/rest/reference/actions#workflow-runs) to query workflow-runs.
