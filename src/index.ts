@@ -7,6 +7,7 @@ type WorkflowRunConclusion = 'success' | 'failure' | 'neutral' | 'cancelled' | '
 
 interface WorkflowRun {
   treeHash: string;
+  commitHash: string;
   status: WorkflowRunStatus;
   conclusion: WorkflowRunConclusion | null;
   html_url: string;
@@ -35,6 +36,7 @@ function parseWorkflowRun(run: ActionsGetWorkflowRunResponseData): WorkflowRun {
   }
   return {
     treeHash,
+    commitHash: run.head_sha,
     status: run.status as WorkflowRunStatus,
     conclusion: run.conclusion as WorkflowRunConclusion ?? null,
     html_url: run.html_url,
@@ -98,8 +100,11 @@ async function main() {
   };
 
   await cancelOutdatedRuns(context);
-
   detectDuplicateRuns(context);
+  await detectPathIgnore(context);
+
+  core.info("Do not skip execution because we did not find a duplicate run");
+  exitSuccess({ shouldSkip: false });
 }
 
 async function cancelOutdatedRuns(context: WRunContext) {
@@ -163,8 +168,24 @@ function detectDuplicateRuns(context: WRunContext) {
   if (failedDuplicate) {
     logFatal(`Trigger a failure because ${failedDuplicate.html_url} has already failed with the exact same files. You can use 'workflow_dispatch' to manually enforce a re-run.`);
   }
-  core.info("Do not skip execution because we did not find a duplicate run");
-  exitSuccess({ shouldSkip: false });
+}
+
+async function detectPathIgnore(context: WRunContext) {
+  await fetchCommitDetails(context.currentRun.commitHash, context);
+}
+
+async function fetchCommitDetails(sha: string, context: WRunContext) {
+  try {
+    const res = await context.octokit.commits.getCommit({
+      owner: context.repoOwner,
+      repo: context.repoName,
+      ref: sha,
+    });
+    core.info(`Fetched ${res} with response code ${res.status}`); // TODO: Remove
+  } catch (e) {
+    core.warning(e);
+    core.warning(`Failed to retrieve commit ${sha}`);
+  }
 }
 
 function exitSuccess(args: { shouldSkip: boolean }): never {
