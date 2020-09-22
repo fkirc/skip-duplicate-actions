@@ -15,7 +15,7 @@ If you work with feature branches, then you might see lots of _duplicate workflo
 For example, duplicate workflow-runs can happen if a workflow runs on a feature branch, but then the workflow is repeated right after merging the feature branch.
 `skip-duplicate-actions` helps to prevent such unnecessary runs.
 
-- **Full traceability:** After clean merges, you will see a message like `Skip execution because the exact same files have been successfully checked in https://github.com/fkirc/skip-duplicate-actions/actions/runs/263149724`.
+- **Full traceability:** After clean merges, you will see a message like `Skip execution because the exact same files have been successfully checked in <previous_run_URL>`.
 - **Skip concurrent workflow-runs:** If the same workflow is unnecessarily triggered twice, then one of the workflow-runs will be skipped.
   For example, this can happen when you push a tag right after pushing a commit.
 - **Respect manual triggers:** If you manually trigger a workflow with `workflow_dispatch`, then the workflow-run will not be skipped.
@@ -29,18 +29,19 @@ In many projects, it is unnecessary to run all tests for documentation-only chan
 Therefore, GitHub provides a `paths-ignore` feature [out of the box](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#onpushpull_requestpaths).
 However, GitHub's `paths-ignore` has some limitations:
 
-- GitHub's `path-ignore` does not work for _required check_. If you path-ignore a required check, then pull requests will block forever without being mergeable. 
-- GitHub's `path-ignore` works well with `pull_request`-triggers, but it does not really work with `push`-triggers.
+- GitHub's `path-ignore` does not work for _required checks_. If you path-ignore a required check, then pull requests will block forever without being mergeable. 
+- Although GitHub's `path-ignore` works well with `pull_request`-triggers, it does not really work with `push`-triggers.
 
-To overcome those limitations, `skip-duplicate-action` provides a more powerful `path_ignore` feature.
+To overcome those limitations, `skip-duplicate-action` provides a more flexible `path_ignore` feature with an efficient backtracking-algorithm.
+Instead of stupidly looking at the current commit, `path_ignore` will look for successful checks in the commit-history.
   
 ## Cancel outdated workflow-runs
 
 Typically, workflows should only run for the most recent commit.
 Therefore, when you push changes to a branch, `skip-duplicate-actions` will cancel any previous workflow-runs that run against outdated commits.
 
-- **Full traceability:** If a workflow-run is cancelled, then you will see a message like `Cancelled https://github.com/fkirc/skip-duplicate-actions/actions/runs/263149724`.
-- **Guaranteed execution:** Despite the complexity, the cancellation algorithm guarantees that a complete check-set will finish no matter what.
+- **Full traceability:** If a workflow-run is cancelled, then you will see a message like `Cancelled <previous_run_URL>`.
+- **Guaranteed execution:** The cancellation-algorithm guarantees that a complete check-set will finish no matter what.
 
 ## Inputs
 

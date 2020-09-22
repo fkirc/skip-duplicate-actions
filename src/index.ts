@@ -1,9 +1,9 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {
-  ActionsListWorkflowRunsResponseData,
   ActionsGetWorkflowRunResponseData,
-  GitGetCommitResponseData,
+  ActionsListWorkflowRunsResponseData,
+  ReposGetCommitResponseData
 } from '@octokit/types'
 
 type WorkflowRunStatus = 'queued' | 'in_progress' | 'completed'
@@ -29,10 +29,10 @@ interface WRunContext {
   octokit: any;
 }
 
-interface GCommit {
-  files: string[] | null;
-  parentSha: string | null;
-}
+// interface GCommit {
+//   files: PullsListFilesResponseData[] | null;
+//   parentSha: string | null;
+// }
 
 function parseWorkflowRun(run: ActionsGetWorkflowRunResponseData): WorkflowRun {
   const treeHash = run.head_commit?.tree_id;
@@ -180,11 +180,57 @@ function detectDuplicateRuns(context: WRunContext) {
 }
 
 async function detectPathIgnore(context: WRunContext) {
-  const commit = await fetchCommitDetails(context.currentRun.commitHash, context);
-  console.log(commit); // TODO: Remove
+  // TODO: check if feature is enabled, read from input
+  let iterSha: string | null = context.currentRun.commitHash;
+  const MAX_BACKTRACE = 50; // Should be never reached in practice; we expect that this loop aborts after 1-3 iterations.
+  for (let distanceToHEAD = 0; distanceToHEAD <= MAX_BACKTRACE; distanceToHEAD++) {
+    const commit: ReposGetCommitResponseData | null = await fetchCommitDetails(iterSha, context);
+    iterSha = commit?.parents?.length ? commit.parents[0]?.sha : null;
+    console.log(commit); // TODO: Remove
+    exitIfSuccessfulRunExists(commit, context);
+    if (!isCommitPathIgnored(commit)) {
+      return;
+    }
+  }
+  core.warning(`Aborted commit-backtracing due to bad performance - Did you push an excessive number of ignored-path-commits?`);
 }
 
-async function fetchCommitDetails(sha: string, context: WRunContext): Promise<GCommit | null> {
+function exitIfSuccessfulRunExists(commit: ReposGetCommitResponseData | null, context: WRunContext) {
+  if (!commit) {
+    return;
+  }
+  const treeHash = commit.commit.tree.sha;
+  const matchingRuns = context.otherRuns.filter((run) => run.treeHash === treeHash);
+  const successfulRun = matchingRuns.find((run) => {
+    return run.status === 'completed' && run.conclusion === 'success';
+  });
+  if (successfulRun) {
+    core.info(`Skip execution because all changes since ${successfulRun.html_url} are in ignored paths`);
+    exitSuccess({ shouldSkip: true });
+  }
+}
+
+function isCommitPathIgnored(commit: ReposGetCommitResponseData | null): boolean {
+  if (!commit) {
+    return false;
+  }
+  const paths = commit.files.map((f) => f.filename);
+  for (const path of paths) {
+    if (!isSinglePathIgnored(path)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function isSinglePathIgnored(path: string): boolean {
+  return path.toLowerCase().includes("README"); // TODO
+}
+
+async function fetchCommitDetails(sha: string | null, context: WRunContext): Promise<ReposGetCommitResponseData | null> {
+  if (!sha) {
+    return null;
+  }
   try {
     console.log(Object.keys(context.octokit.repos.getCommit)); // TODO: Remove
     const res = await context.octokit.repos.getCommit({
@@ -194,12 +240,11 @@ async function fetchCommitDetails(sha: string, context: WRunContext): Promise<GC
     });
     core.info(`Fetched ${res} with response code ${res.status}`); // TODO: Remove
     console.log(res); // TODO: Remove
-    const rawCommit: GitGetCommitResponseData = res.data;
-    return {
-      // @ts-ignore
-      files: rawCommit.files as any as unknown as any,
-      parentSha: rawCommit.parents[0]?.sha,
-    }
+    return res.data;
+    // return {
+    //   files: rawCommit.files,
+    //   parentSha: rawCommit.parents[0]?.sha,
+    // }
   } catch (e) {
     core.warning(e);
     core.warning(`Failed to retrieve commit ${sha}`);

@@ -5872,11 +5872,53 @@ function detectDuplicateRuns(context) {
     }
 }
 async function detectPathIgnore(context) {
-    const commit = await fetchCommitDetails(context.currentRun.commitHash, context);
-    console.log(commit);
+    var _a, _b;
+    let iterSha = context.currentRun.commitHash;
+    const MAX_BACKTRACE = 50;
+    for (let distanceToHEAD = 0; distanceToHEAD <= MAX_BACKTRACE; distanceToHEAD++) {
+        const commit = await fetchCommitDetails(iterSha, context);
+        iterSha = ((_a = commit === null || commit === void 0 ? void 0 : commit.parents) === null || _a === void 0 ? void 0 : _a.length) ? (_b = commit.parents[0]) === null || _b === void 0 ? void 0 : _b.sha : null;
+        console.log(commit);
+        exitIfSuccessfulRunExists(commit, context);
+        if (!isCommitPathIgnored(commit)) {
+            return;
+        }
+    }
+    core.warning(`Aborted commit-backtracing due to bad performance - Did you push an excessive number of ignored-path-commits?`);
+}
+function exitIfSuccessfulRunExists(commit, context) {
+    if (!commit) {
+        return;
+    }
+    const treeHash = commit.commit.tree.sha;
+    const matchingRuns = context.otherRuns.filter((run) => run.treeHash === treeHash);
+    const successfulRun = matchingRuns.find((run) => {
+        return run.status === 'completed' && run.conclusion === 'success';
+    });
+    if (successfulRun) {
+        core.info(`Skip execution because all changes since ${successfulRun.html_url} are in ignored paths`);
+        exitSuccess({ shouldSkip: true });
+    }
+}
+function isCommitPathIgnored(commit) {
+    if (!commit) {
+        return false;
+    }
+    const paths = commit.files.map((f) => f.filename);
+    for (const path of paths) {
+        if (!isSinglePathIgnored(path)) {
+            return false;
+        }
+    }
+    return true;
+}
+function isSinglePathIgnored(path) {
+    return path.toLowerCase().includes("README");
 }
 async function fetchCommitDetails(sha, context) {
-    var _a;
+    if (!sha) {
+        return null;
+    }
     try {
         console.log(Object.keys(context.octokit.repos.getCommit));
         const res = await context.octokit.repos.getCommit({
@@ -5886,11 +5928,7 @@ async function fetchCommitDetails(sha, context) {
         });
         core.info(`Fetched ${res} with response code ${res.status}`);
         console.log(res);
-        const rawCommit = res.data;
-        return {
-            files: rawCommit.files,
-            parentSha: (_a = rawCommit.parents[0]) === null || _a === void 0 ? void 0 : _a.sha,
-        };
+        return res.data;
     }
     catch (e) {
         core.warning(e);
