@@ -49,6 +49,10 @@ Therefore, when you push changes to a branch, `skip-duplicate-actions` will canc
 
 **Required** Your access token for GitHub.
 
+### `path_ignore`
+
+A list of ignored path patterns, e.g. something like `[**/*.md]`. Default `[]`.
+
 ### `cancel_others`
 
 If true, then workflow-runs from outdated commits will be cancelled. Default `true`.
