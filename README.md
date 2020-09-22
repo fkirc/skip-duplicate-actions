@@ -1,13 +1,13 @@
 # Skip Duplicate Actions
 
-`skip-duplicate-actions` provides two separate features for [GitHub Actions](https://github.com/features/actions):
+`skip-duplicate-actions` provides the following features for [GitHub Actions](https://github.com/features/actions):
 
 - [Skip duplicate workflow-runs](#skip-duplicate-workflow-runs) after merges, pull requests or similar.
-- [Skip ignored paths](#skip-ignored-paths) as a better alternative to GitHub's `path-ignore` triggers.
+- [Skip ignored paths](#skip-ignored-paths) to speedup documentation-changes or similar.
 - [Cancel outdated workflow-runs](#cancel-outdated-workflow-runs) after branch-pushes.
 
-Both features help to save time and costs; especially for long-running workflows.
-You can choose either one or both of those features.
+All of those features help to save time and costs; especially for long-running workflows.
+You can choose any subset of those features.
 
 ## Skip duplicate workflow-runs
 
@@ -24,19 +24,15 @@ For example, duplicate workflow-runs can happen if a workflow runs on a feature 
   This is commonly the case if you merge "outdated branches".
 
 ## Skip ignored paths
+avoid this
+In many projects, it is unnecessary to run all tests for documentation-only changes.
+Therefore, GitHub provides a `paths-ignore` feature [out of the box](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#onpushpull_requestpaths).
+However, GitHub's `paths-ignore` has some limitations:
 
-In many projects, there are certain paths or file where we do not want to run all workflows.
-For example, it is unnecessary to run all tests for documentation-only changes.
-To do so, GitHub provides a `paths-ignore` feature [out of the box](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#onpushpull_requestpaths).
-However, GitHub's `paths-ignore` is severely limited:
-
-- GitHub's `path-ignore` does not work for _required check_. A required check is a workflow that has to pass for each pull request merge.
-  If you path-ignore a required check, then pull requests might block forever without ever being mergeable. 
+- GitHub's `path-ignore` does not work for _required check_. If you path-ignore a required check, then pull requests will block forever without being mergeable. 
 - GitHub's `path-ignore` works well with `pull_request`-triggers, but it does not really work with `push`-triggers.
 
 To overcome those limitations, `skip-duplicate-action` provides a more powerful `path_ignore` feature.
-See the usage examples below to see how it 
-
   
 ## Cancel outdated workflow-runs
 
