@@ -5911,6 +5911,7 @@ function isCommitPathIgnored(commit) {
             return false;
         }
     }
+    console.info(`Detected a commit with only ignored paths: ${paths}`);
     return true;
 }
 function isSinglePathIgnored(path) {

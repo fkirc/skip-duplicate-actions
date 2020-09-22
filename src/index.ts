@@ -221,6 +221,7 @@ function isCommitPathIgnored(commit: ReposGetCommitResponseData | null): boolean
       return false;
     }
   }
+  console.info(`Detected a commit with only ignored paths: ${paths}`);
   return true;
 }
 
