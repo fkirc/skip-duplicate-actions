@@ -24,7 +24,7 @@ For example, duplicate workflow-runs can happen if a workflow runs on a feature 
   This is commonly the case if you merge "outdated branches".
 
 ## Skip ignored paths
-avoid this
+
 In many projects, it is unnecessary to run all tests for documentation-only changes.
 Therefore, GitHub provides a `paths-ignore` feature [out of the box](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#onpushpull_requestpaths).
 However, GitHub's `paths-ignore` has some limitations:

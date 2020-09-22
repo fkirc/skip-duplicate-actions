@@ -5805,8 +5805,7 @@ async function main() {
         octokit,
     };
     await cancelOutdatedRuns(context);
-    const duplicateRuns = otherRuns.filter((run) => run.treeHash === currentRun.treeHash);
-    detectDuplicateRunsAndExit(duplicateRuns);
+    detectDuplicateRuns(context);
 }
 async function cancelOutdatedRuns(context) {
     const cancelOthers = getBooleanInput('cancel_others', true);
@@ -5841,7 +5840,8 @@ async function cancelWorkflowRun(run, context) {
         core.warning(`Failed to cancel ${run.html_url}`);
     }
 }
-function detectDuplicateRunsAndExit(duplicateRuns) {
+function detectDuplicateRuns(context) {
+    const duplicateRuns = context.otherRuns.filter((run) => run.treeHash === context.currentRun.treeHash);
     if (github.context.eventName === 'workflow_dispatch') {
         core.info("Do not skip execution because the workflow was triggered with workflow_dispatch");
         exitSuccess({ shouldSkip: false });

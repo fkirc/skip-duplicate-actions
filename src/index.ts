@@ -99,11 +99,10 @@ async function main() {
 
   await cancelOutdatedRuns(context);
 
-  const duplicateRuns = otherRuns.filter((run) => run.treeHash === currentRun.treeHash);
-  detectDuplicateRunsAndExit(duplicateRuns);
+  detectDuplicateRuns(context);
 }
 
-async function cancelOutdatedRuns(context: WRunContext,) {
+async function cancelOutdatedRuns(context: WRunContext) {
   const cancelOthers = getBooleanInput('cancel_others', true);
   if (!cancelOthers) {
     return core.info(`Skip cancellation because 'cancel_others' is set to false`);
@@ -137,7 +136,9 @@ async function cancelWorkflowRun(run: WorkflowRun, context: WRunContext) {
   }
 }
 
-function detectDuplicateRunsAndExit(duplicateRuns: WorkflowRun[]) {
+function detectDuplicateRuns(context: WRunContext) {
+  const duplicateRuns = context.otherRuns.filter((run) => run.treeHash === context.currentRun.treeHash);
+
   if (github.context.eventName === 'workflow_dispatch') {
     core.info("Do not skip execution because the workflow was triggered with workflow_dispatch");
     exitSuccess({ shouldSkip: false });
