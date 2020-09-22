@@ -5872,9 +5872,11 @@ function detectDuplicateRuns(context) {
     }
 }
 async function detectPathIgnore(context) {
-    await fetchCommitDetails(context.currentRun.commitHash, context);
+    const commit = await fetchCommitDetails(context.currentRun.commitHash, context);
+    console.log(commit);
 }
 async function fetchCommitDetails(sha, context) {
+    var _a;
     try {
         console.log(Object.keys(context.octokit.repos.getCommit));
         const res = await context.octokit.repos.getCommit({
@@ -5884,10 +5886,16 @@ async function fetchCommitDetails(sha, context) {
         });
         core.info(`Fetched ${res} with response code ${res.status}`);
         console.log(res);
+        const rawCommit = res.data;
+        return {
+            files: rawCommit.files,
+            parentSha: (_a = rawCommit.parents[0]) === null || _a === void 0 ? void 0 : _a.sha,
+        };
     }
     catch (e) {
         core.warning(e);
         core.warning(`Failed to retrieve commit ${sha}`);
+        return null;
     }
 }
 function exitSuccess(args) {

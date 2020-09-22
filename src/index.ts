@@ -1,6 +1,10 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import {ActionsListWorkflowRunsResponseData, ActionsGetWorkflowRunResponseData} from '@octokit/types'
+import {
+  ActionsListWorkflowRunsResponseData,
+  ActionsGetWorkflowRunResponseData,
+  GitGetCommitResponseData,
+} from '@octokit/types'
 
 type WorkflowRunStatus = 'queued' | 'in_progress' | 'completed'
 type WorkflowRunConclusion = 'success' | 'failure' | 'neutral' | 'cancelled' | 'skipped' | 'timed_out'
@@ -23,6 +27,11 @@ interface WRunContext {
   currentRun: WorkflowRun;
   otherRuns: WorkflowRun[];
   octokit: any;
+}
+
+interface GCommit {
+  files: string[] | null;
+  parentSha: string | null;
 }
 
 function parseWorkflowRun(run: ActionsGetWorkflowRunResponseData): WorkflowRun {
@@ -171,10 +180,11 @@ function detectDuplicateRuns(context: WRunContext) {
 }
 
 async function detectPathIgnore(context: WRunContext) {
-  await fetchCommitDetails(context.currentRun.commitHash, context);
+  const commit = await fetchCommitDetails(context.currentRun.commitHash, context);
+  console.log(commit); // TODO: Remove
 }
 
-async function fetchCommitDetails(sha: string, context: WRunContext) {
+async function fetchCommitDetails(sha: string, context: WRunContext): Promise<GCommit | null> {
   try {
     console.log(Object.keys(context.octokit.repos.getCommit)); // TODO: Remove
     const res = await context.octokit.repos.getCommit({
@@ -184,9 +194,16 @@ async function fetchCommitDetails(sha: string, context: WRunContext) {
     });
     core.info(`Fetched ${res} with response code ${res.status}`); // TODO: Remove
     console.log(res); // TODO: Remove
+    const rawCommit: GitGetCommitResponseData = res.data;
+    return {
+      // @ts-ignore
+      files: rawCommit.files as any as unknown as any,
+      parentSha: rawCommit.parents[0]?.sha,
+    }
   } catch (e) {
     core.warning(e);
     core.warning(`Failed to retrieve commit ${sha}`);
+    return null;
   }
 }
 
