@@ -112,7 +112,7 @@ async function main() {
   detectDuplicateRuns(context);
   await detectPathIgnore(context);
 
-  core.info("Do not skip execution because we did not find a duplicate run");
+  core.info("Do not skip execution because we did not find a transferable run");
   exitSuccess({ shouldSkip: false });
 }
 
@@ -226,7 +226,7 @@ function isCommitPathIgnored(commit: ReposGetCommitResponseData | null): boolean
 }
 
 function isSinglePathIgnored(path: string): boolean {
-  return path.toLowerCase().includes("README"); // TODO
+  return path.toLowerCase().includes("README".toLowerCase()); // TODO
 }
 
 async function fetchCommitDetails(sha: string | null, context: WRunContext): Promise<ReposGetCommitResponseData | null> {

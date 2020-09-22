@@ -5808,7 +5808,7 @@ async function main() {
     await cancelOutdatedRuns(context);
     detectDuplicateRuns(context);
     await detectPathIgnore(context);
-    core.info("Do not skip execution because we did not find a duplicate run");
+    core.info("Do not skip execution because we did not find a transferable run");
     exitSuccess({ shouldSkip: false });
 }
 async function cancelOutdatedRuns(context) {
@@ -5915,7 +5915,7 @@ function isCommitPathIgnored(commit) {
     return true;
 }
 function isSinglePathIgnored(path) {
-    return path.toLowerCase().includes("README");
+    return path.toLowerCase().includes("README".toLowerCase());
 }
 async function fetchCommitDetails(sha, context) {
     if (!sha) {
