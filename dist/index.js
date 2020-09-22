@@ -5883,6 +5883,7 @@ async function fetchCommitDetails(sha, context) {
             ref: sha,
         });
         core.info(`Fetched ${res} with response code ${res.status}`);
+        console.log(res);
     }
     catch (e) {
         core.warning(e);

@@ -183,6 +183,7 @@ async function fetchCommitDetails(sha: string, context: WRunContext) {
       ref: sha,
     });
     core.info(`Fetched ${res} with response code ${res.status}`); // TODO: Remove
+    console.log(res); // TODO: Remove
   } catch (e) {
     core.warning(e);
     core.warning(`Failed to retrieve commit ${sha}`);
