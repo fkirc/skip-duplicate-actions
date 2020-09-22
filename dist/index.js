@@ -5905,6 +5905,7 @@ function isCommitPathIgnored(commit) {
         return false;
     }
     const paths = commit.files.map((f) => f.filename);
+    console.info(`Match ignored paths with ${paths}`);
     for (const path of paths) {
         if (!isSinglePathIgnored(path)) {
             return false;

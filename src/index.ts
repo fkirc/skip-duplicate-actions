@@ -215,6 +215,7 @@ function isCommitPathIgnored(commit: ReposGetCommitResponseData | null): boolean
     return false;
   }
   const paths = commit.files.map((f) => f.filename);
+  console.info(`Match ignored paths with ${paths}`); // TODO: Remove
   for (const path of paths) {
     if (!isSinglePathIgnored(path)) {
       return false;
