@@ -176,6 +176,7 @@ async function detectPathIgnore(context: WRunContext) {
 
 async function fetchCommitDetails(sha: string, context: WRunContext) {
   try {
+    console.log(Object.keys(context.octokit.keys)); // TODO: Remove
     const res = await context.octokit.commits.getCommit({
       owner: context.repoOwner,
       repo: context.repoName,

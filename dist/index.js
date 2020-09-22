@@ -5876,6 +5876,7 @@ async function detectPathIgnore(context) {
 }
 async function fetchCommitDetails(sha, context) {
     try {
+        console.log(Object.keys(context.octokit.keys));
         const res = await context.octokit.commits.getCommit({
             owner: context.repoOwner,
             repo: context.repoName,
