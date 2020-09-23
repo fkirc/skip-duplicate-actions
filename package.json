@@ -14,11 +14,16 @@
   },
   "devDependencies": {
     "typescript": "^4.0.3",
-    "husky": "^4.3.0"
+    "husky": "^4.3.0",
+    "jest": "^26.4.2",
+    "@types/jest": "^26.0.14"
   },
   "husky": {
     "hooks": {
       "pre-commit": "npm run build && git diff --exit-code dist/"
     }
+  },
+  "jest": {
+    "preset": "ts-jest"
   }
 }
