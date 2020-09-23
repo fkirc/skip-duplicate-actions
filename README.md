@@ -47,7 +47,7 @@ However, GitHub's `paths` has some limitations:
 - GitHub's `paths` does not work with required checks that you really want to pass successfully.
 
 To overcome those limitations, `skip-duplicate-actions` provides a more sophisticated `paths`-feature.
-Instead of blindly skipping checks, the backtracking-algorithm will only skip if it can find a suitable check in your commit-history.
+Instead of blindly skipping checks, the backtracking-algorithm will only skip something if it can find a suitable check in your commit-history.
 
 ## Cancel outdated workflow-runs
 
