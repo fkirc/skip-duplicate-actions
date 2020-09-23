@@ -9892,7 +9892,7 @@ async function main() {
     }
     detectDuplicateRuns(context);
     if (context.paths.length >= 1 || context.pathsIgnore.length >= 1) {
-        await detectPathSkipping(context);
+        await backtracePathSkipping(context);
     }
     core.info("Do not skip execution because we did not find a transferable run");
     exitSuccess({ shouldSkip: false });
@@ -9953,7 +9953,7 @@ function detectDuplicateRuns(context) {
         logFatal(`Trigger a failure because ${failedDuplicate.html_url} has already failed with the exact same files. You can use 'workflow_dispatch' to manually enforce a re-run.`);
     }
 }
-async function detectPathSkipping(context) {
+async function backtracePathSkipping(context) {
     var _a, _b;
     let commit;
     let iterSha = context.currentRun.commitHash;
@@ -9983,16 +9983,31 @@ function exitIfSuccessfulRunExists(commit, context) {
     }
 }
 function isCommitSkippable(commit, context) {
+    const changedFiles = commit.files.map((f) => f.filename);
+    if (isCommitPathIgnored(commit, context)) {
+        core.info(`Commit ${commit.html_url} is path-ignored: All of '${changedFiles}' match against patterns '${context.pathsIgnore}'`);
+        return true;
+    }
+    if (isCommitPathSkipped(commit, context)) {
+        core.info(`Commit ${commit.html_url} is path-skipped: None of '${changedFiles}' matches against patterns '${context.paths}'`);
+        return true;
+    }
+    return false;
+}
+function isCommitPathIgnored(commit, context) {
     if (!context.pathsIgnore.length) {
         return false;
     }
-    const paths = commit.files.map((f) => f.filename);
-    const notIgnoredPaths = micromatch.not(paths, context.pathsIgnore);
-    const allPathsIgnored = notIgnoredPaths.length == 0;
-    if (allPathsIgnored) {
-        core.info(`Commit ${commit.html_url} contains only ignored files: ${paths}`);
+    const changedFiles = commit.files.map((f) => f.filename);
+    return micromatch.every(changedFiles, context.pathsIgnore);
+}
+function isCommitPathSkipped(commit, context) {
+    if (!context.paths.length) {
+        return false;
     }
-    return allPathsIgnored;
+    const changedFiles = commit.files.map((f) => f.filename);
+    const matchExists = micromatch.some(changedFiles, context.paths);
+    return !matchExists;
 }
 async function fetchCommitDetails(sha, context) {
     if (!sha) {

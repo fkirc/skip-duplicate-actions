@@ -114,7 +114,7 @@ async function main() {
   }
   detectDuplicateRuns(context);
   if (context.paths.length >= 1 || context.pathsIgnore.length >= 1) {
-    await detectPathSkipping(context);
+    await backtracePathSkipping(context);
   }
   core.info("Do not skip execution because we did not find a transferable run");
   exitSuccess({ shouldSkip: false });
@@ -179,7 +179,7 @@ function detectDuplicateRuns(context: WRunContext) {
   }
 }
 
-async function detectPathSkipping(context: WRunContext) {
+async function backtracePathSkipping(context: WRunContext) {
   let commit: ReposGetCommitResponseData | null;
   let iterSha: string | null = context.currentRun.commitHash;
   let distanceToHEAD = 0;
@@ -191,6 +191,7 @@ async function detectPathSkipping(context: WRunContext) {
     iterSha = commit.parents?.length ? commit.parents[0]?.sha : null;
 
     exitIfSuccessfulRunExists(commit, context);
+
     if (distanceToHEAD++ >= 50) {
       // Should be never reached in practice; we expect that this loop aborts after 1-3 iterations.
       core.warning(`Aborted commit-backtracing due to bad performance - Did you push an excessive number of ignored-path-commits?`);
@@ -212,16 +213,35 @@ function exitIfSuccessfulRunExists(commit: ReposGetCommitResponseData, context: 
 }
 
 function isCommitSkippable(commit: ReposGetCommitResponseData, context: WRunContext): boolean {
+  const changedFiles = commit.files.map((f) => f.filename);
+  if (isCommitPathIgnored(commit, context)) {
+    core.info(`Commit ${commit.html_url} is path-ignored: All of '${changedFiles}' match against patterns '${context.pathsIgnore}'`);
+    return true;
+  }
+  if (isCommitPathSkipped(commit, context)) {
+    core.info(`Commit ${commit.html_url} is path-skipped: None of '${changedFiles}' matches against patterns '${context.paths}'`);
+    return true;
+  }
+  return false;
+}
+
+function isCommitPathIgnored(commit: ReposGetCommitResponseData, context: WRunContext): boolean {
   if (!context.pathsIgnore.length) {
     return false;
   }
-  const paths = commit.files.map((f) => f.filename);
-  const notIgnoredPaths = micromatch.not(paths, context.pathsIgnore);
-  const allPathsIgnored = notIgnoredPaths.length == 0;
-  if (allPathsIgnored) {
-    core.info(`Commit ${commit.html_url} contains only ignored files: ${paths}`);
+  // Skip if all changed files match against pathsIgnore.
+  const changedFiles = commit.files.map((f) => f.filename);
+  return micromatch.every(changedFiles, context.pathsIgnore);
+}
+
+function isCommitPathSkipped(commit: ReposGetCommitResponseData, context: WRunContext): boolean {
+  if (!context.paths.length) {
+    return false;
   }
-  return allPathsIgnored;
+  // Skip if none of the changed files matches against context.paths.
+  const changedFiles = commit.files.map((f) => f.filename);
+  const matchExists = micromatch.some(changedFiles, context.paths);
+  return !matchExists;
 }
 
 async function fetchCommitDetails(sha: string | null, context: WRunContext): Promise<ReposGetCommitResponseData | null> {
