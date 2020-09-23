@@ -9884,14 +9884,15 @@ async function main() {
         otherRuns,
         octokit,
         pathsIgnore: getStringArrayInput("paths_ignore"),
+        paths: getStringArrayInput("paths"),
     };
     const cancelOthers = getBooleanInput('cancel_others', true);
     if (cancelOthers) {
         await cancelOutdatedRuns(context);
     }
     detectDuplicateRuns(context);
-    if (context.pathsIgnore && context.pathsIgnore.length >= 1) {
-        await detectPathsIgnore(context);
+    if (context.paths.length >= 1 || context.pathsIgnore.length >= 1) {
+        await detectPathSkipping(context);
     }
     core.info("Do not skip execution because we did not find a transferable run");
     exitSuccess({ shouldSkip: false });
@@ -9952,7 +9953,7 @@ function detectDuplicateRuns(context) {
         logFatal(`Trigger a failure because ${failedDuplicate.html_url} has already failed with the exact same files. You can use 'workflow_dispatch' to manually enforce a re-run.`);
     }
 }
-async function detectPathsIgnore(context) {
+async function detectPathSkipping(context) {
     var _a, _b;
     let commit;
     let iterSha = context.currentRun.commitHash;
@@ -9968,7 +9969,7 @@ async function detectPathsIgnore(context) {
             core.warning(`Aborted commit-backtracing due to bad performance - Did you push an excessive number of ignored-path-commits?`);
             return;
         }
-    } while (allChangesIgnored(commit, context));
+    } while (isCommitSkippable(commit, context));
 }
 function exitIfSuccessfulRunExists(commit, context) {
     const treeHash = commit.commit.tree.sha;
@@ -9977,14 +9978,16 @@ function exitIfSuccessfulRunExists(commit, context) {
         return run.status === 'completed' && run.conclusion === 'success';
     });
     if (successfulRun) {
-        core.info(`Skip execution because all changes since ${successfulRun.html_url} are in ignored paths`);
+        core.info(`Skip execution because all changes since ${successfulRun.html_url} are in ignored or skipped paths`);
         exitSuccess({ shouldSkip: true });
     }
 }
-function allChangesIgnored(commit, context) {
+function isCommitSkippable(commit, context) {
+    if (!context.pathsIgnore.length) {
+        return false;
+    }
     const paths = commit.files.map((f) => f.filename);
-    const patterns = context.pathsIgnore;
-    const notIgnoredPaths = micromatch.not(paths, patterns);
+    const notIgnoredPaths = micromatch.not(paths, context.pathsIgnore);
     const allPathsIgnored = notIgnoredPaths.length == 0;
     if (allPathsIgnored) {
         core.info(`Commit ${commit.html_url} contains only ignored files: ${paths}`);

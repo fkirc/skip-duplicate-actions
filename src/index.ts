@@ -29,6 +29,7 @@ interface WRunContext {
   otherRuns: WorkflowRun[];
   octokit: any;
   pathsIgnore: string[];
+  paths: string[];
 }
 
 function parseWorkflowRun(run: ActionsGetWorkflowRunResponseData): WorkflowRun {
@@ -104,6 +105,7 @@ async function main() {
     otherRuns,
     octokit,
     pathsIgnore: getStringArrayInput("paths_ignore"),
+    paths: getStringArrayInput("paths"),
   };
 
   const cancelOthers = getBooleanInput('cancel_others', true);
@@ -111,8 +113,8 @@ async function main() {
     await cancelOutdatedRuns(context);
   }
   detectDuplicateRuns(context);
-  if (context.pathsIgnore && context.pathsIgnore.length >= 1) {
-    await detectPathsIgnore(context);
+  if (context.paths.length >= 1 || context.pathsIgnore.length >= 1) {
+    await detectPathSkipping(context);
   }
   core.info("Do not skip execution because we did not find a transferable run");
   exitSuccess({ shouldSkip: false });
@@ -177,7 +179,7 @@ function detectDuplicateRuns(context: WRunContext) {
   }
 }
 
-async function detectPathsIgnore(context: WRunContext) {
+async function detectPathSkipping(context: WRunContext) {
   let commit: ReposGetCommitResponseData | null;
   let iterSha: string | null = context.currentRun.commitHash;
   let distanceToHEAD = 0;
@@ -194,7 +196,7 @@ async function detectPathsIgnore(context: WRunContext) {
       core.warning(`Aborted commit-backtracing due to bad performance - Did you push an excessive number of ignored-path-commits?`);
       return;
     }
-  } while (allChangesIgnored(commit, context));
+  } while (isCommitSkippable(commit, context));
 }
 
 function exitIfSuccessfulRunExists(commit: ReposGetCommitResponseData, context: WRunContext) {
@@ -204,15 +206,17 @@ function exitIfSuccessfulRunExists(commit: ReposGetCommitResponseData, context: 
     return run.status === 'completed' && run.conclusion === 'success';
   });
   if (successfulRun) {
-    core.info(`Skip execution because all changes since ${successfulRun.html_url} are in ignored paths`);
+    core.info(`Skip execution because all changes since ${successfulRun.html_url} are in ignored or skipped paths`);
     exitSuccess({ shouldSkip: true });
   }
 }
 
-function allChangesIgnored(commit: ReposGetCommitResponseData, context: WRunContext): boolean {
+function isCommitSkippable(commit: ReposGetCommitResponseData, context: WRunContext): boolean {
+  if (!context.pathsIgnore.length) {
+    return false;
+  }
   const paths = commit.files.map((f) => f.filename);
-  const patterns = context.pathsIgnore;
-  const notIgnoredPaths = micromatch.not(paths, patterns);
+  const notIgnoredPaths = micromatch.not(paths, context.pathsIgnore);
   const allPathsIgnored = notIgnoredPaths.length == 0;
   if (allPathsIgnored) {
     core.info(`Commit ${commit.html_url} contains only ignored files: ${paths}`);
