@@ -34,7 +34,7 @@ However, GitHub's `paths-ignore` has some limitations:
 - Although GitHub's `paths-ignore` works well with `pull_request`-triggers, it does not really work with `push`-triggers.
 
 To overcome those limitations, `skip-duplicate-actions` provides a more flexible `paths_ignore` feature with an efficient backtracking-algorithm.
-Instead of stupidly looking at the current commit, '["**/README.md", "**/docs/**"]'`paths_ignore` will look for successful checks in the commit-history.
+Instead of stupidly looking at the current commit, `paths_ignore` will look for successful checks in the commit-history.
   
 ## Cancel outdated workflow-runs
 
