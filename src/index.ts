@@ -31,11 +31,6 @@ interface WRunContext {
   pathsIgnore: string[] | null;
 }
 
-// interface GCommit {
-//   files: PullsListFilesResponseData[] | null;
-//   parentSha: string | null;
-// }
-
 function parseWorkflowRun(run: ActionsGetWorkflowRunResponseData): WorkflowRun {
   const treeHash = run.head_commit?.tree_id;
   if (!treeHash) {
@@ -117,7 +112,7 @@ async function main() {
   }
   detectDuplicateRuns(context);
   if (context.pathsIgnore) {
-    await detectPathIgnore(context);
+    await detectPathsIgnore(context);
   }
   core.info("Do not skip execution because we did not find a transferable run");
   exitSuccess({ shouldSkip: false });
@@ -182,7 +177,7 @@ function detectDuplicateRuns(context: WRunContext) {
   }
 }
 
-async function detectPathIgnore(context: WRunContext) {
+async function detectPathsIgnore(context: WRunContext) {
   let commit: ReposGetCommitResponseData | null;
   let iterSha: string | null = context.currentRun.commitHash;
   let distanceToHEAD = 0;

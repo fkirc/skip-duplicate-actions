@@ -9891,7 +9891,7 @@ async function main() {
     }
     detectDuplicateRuns(context);
     if (context.pathsIgnore) {
-        await detectPathIgnore(context);
+        await detectPathsIgnore(context);
     }
     core.info("Do not skip execution because we did not find a transferable run");
     exitSuccess({ shouldSkip: false });
@@ -9952,7 +9952,7 @@ function detectDuplicateRuns(context) {
         logFatal(`Trigger a failure because ${failedDuplicate.html_url} has already failed with the exact same files. You can use 'workflow_dispatch' to manually enforce a re-run.`);
     }
 }
-async function detectPathIgnore(context) {
+async function detectPathsIgnore(context) {
     var _a, _b;
     let commit;
     let iterSha = context.currentRun.commitHash;
