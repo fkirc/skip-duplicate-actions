@@ -18,7 +18,7 @@ jobs:
     if: ${{ needs.pre_job.outputs.should_skip == 'false' }}
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Running slow tests..." && sleep 60
+      - run: echo "Running slow tests..." && sleep 30
 
 
 
@@ -32,7 +32,7 @@ jobs:
           paths: '["src/**", "dist/**"]'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
-          echo "Run only if src/ or dist/ changed..." && sleep 60
+          echo "Run only if src/ or dist/ changed..." && sleep 30
           echo "Do other stuff..."
 
 
@@ -52,4 +52,4 @@ jobs:
           cancel_others: 'false'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
-          echo "Do stuff..." && sleep 60
+          echo "Do stuff..." && sleep 30
