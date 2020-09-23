@@ -70,11 +70,11 @@ true if the current run can be safely skipped. This should be evaluated for eith
 ## Usage examples
 
 You can use `skip-duplicate-actions` to either skip individual steps or entire jobs.
-Which one is easier depends on your workflow.
+To minimize changes to existing jobs, it is often easier to skip entire jobs.
 
 ### Option 1: Skip entire jobs
 
-To skip entire jobs, you will need a `pre_job` that acts as a pre-condition for your `main_job`.
+To skip entire jobs, you should add a `pre_job` that acts as a pre-condition for your `main_job`.
 Although this example looks like a lot of code, there are only two additional lines in your project-specific `main_job` (the `needs`-clause and the `if`-clause):
 
 ```yml
