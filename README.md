@@ -27,7 +27,7 @@ For example, duplicate workflow-runs can happen if a workflow runs on a feature 
 
 In many projects, it is unnecessary to run all tests for documentation-only-changes.
 Therefore, GitHub provides a [paths-ignore](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#onpushpull_requestpaths) feature out of the box.
-However, GitHub's `paths-ignore` has some limitations:￼
+However, GitHub's `paths-ignore` has some limitations:
 
 - GitHub's `path-ignore` does not work for [required checks](https://docs.github.com/en/github/administering-a-repository/about-required-status-checks). If you path-ignore a required check, then pull requests will block forever without being mergeable. 
 - Although GitHub's `path-ignore` works well with `pull_request`-triggers, it does not really work with `push`-triggers.
