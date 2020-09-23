@@ -5,6 +5,7 @@ import {
   ActionsListWorkflowRunsResponseData,
   ReposGetCommitResponseData
 } from '@octokit/types'
+const micromatch = require('micromatch');
 
 type WorkflowRunStatus = 'queued' | 'in_progress' | 'completed'
 type WorkflowRunConclusion = 'success' | 'failure' | 'neutral' | 'cancelled' | 'skipped' | 'timed_out'
@@ -232,17 +233,8 @@ function isSinglePathIgnored(path: string, context: WRunContext): boolean {
   if (!context.pathsIgnore) {
     logFatal("pathsIgnore checked too late");
   }
-  for (const matcher of context.pathsIgnore) {
-    if (matchPath({ path, matcher})) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function matchPath(args: { path: string, matcher: string }): boolean {
-  return args.path.toLowerCase().includes(args.matcher.toLowerCase()); // TODO
-
+  const patterns = context.pathsIgnore;
+  return micromatch.isMatch(path, patterns);
 }
 
 async function fetchCommitDetails(sha: string | null, context: WRunContext): Promise<ReposGetCommitResponseData | null> {
