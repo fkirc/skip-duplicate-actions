@@ -165,4 +165,3 @@ After querying such workflow-runs, it will compare them with the current workflo
 
 `skip-duplicate-actions` uses the [Repos Commit API](https://docs.github.com/en/rest/reference/repos#get-a-commit) to perform an efficient backtracking-algorithm for paths-skipping-detection.
 Moreover, a synergy with the cancellation-feature reduces the number of REST API calls.
-
