@@ -224,7 +224,7 @@ function allChangesIgnored(commit: ReposGetCommitResponseData, context: WRunCont
   const notIgnoredPaths = micromatch.not(paths, patterns);
   const allPathsIgnored = notIgnoredPaths.length == 0;
   if (allPathsIgnored) {
-    console.info(`Commit ${commit.sha} contains only ignored files: ${paths}`);
+    core.info(`Commit ${commit.sha} contains only ignored files: ${paths}`);
   }
   return allPathsIgnored;
 }
@@ -234,19 +234,13 @@ async function fetchCommitDetails(sha: string | null, context: WRunContext): Pro
     return null;
   }
   try {
-    console.log(Object.keys(context.octokit.repos.getCommit)); // TODO: Remove
     const res = await context.octokit.repos.getCommit({
       owner: context.repoOwner,
       repo: context.repoName,
       ref: sha,
     });
-    core.info(`Fetched ${res} with response code ${res.status}`); // TODO: Remove
-    console.log(res); // TODO: Remove
+    //core.info(`Fetched ${res} with response code ${res.status}`);
     return res.data;
-    // return {
-    //   files: rawCommit.files,
-    //   parentSha: rawCommit.parents[0]?.sha,
-    // }
   } catch (e) {
     core.warning(e);
     core.warning(`Failed to retrieve commit ${sha}`);
@@ -300,6 +294,5 @@ function logFatal(msg: string): never {
 
 main().catch((e) => {
   core.error(e);
-  //console.error(e);
   logFatal(e.message);
 });

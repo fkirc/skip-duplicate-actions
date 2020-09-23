@@ -9990,7 +9990,7 @@ function allChangesIgnored(commit, context) {
     const notIgnoredPaths = micromatch.not(paths, patterns);
     const allPathsIgnored = notIgnoredPaths.length == 0;
     if (allPathsIgnored) {
-        console.info(`Commit ${commit.sha} contains only ignored files: ${paths}`);
+        core.info(`Commit ${commit.sha} contains only ignored files: ${paths}`);
     }
     return allPathsIgnored;
 }
@@ -9999,14 +9999,11 @@ async function fetchCommitDetails(sha, context) {
         return null;
     }
     try {
-        console.log(Object.keys(context.octokit.repos.getCommit));
         const res = await context.octokit.repos.getCommit({
             owner: context.repoOwner,
             repo: context.repoName,
             ref: sha,
         });
-        core.info(`Fetched ${res} with response code ${res.status}`);
-        console.log(res);
         return res.data;
     }
     catch (e) {
