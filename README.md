@@ -85,6 +85,7 @@ jobs:
         uses: fkirc/skip-duplicate-actions@master
         with:
           github_token: ${{ github.token }}
+          paths_ignore: ["**/README.md", "**/docs/**"]
 
   main_job:
     needs: pre_job
