@@ -122,7 +122,7 @@ jobs:
 
 ### Option 3: Cancellation-only
 
-If you do not care about the duplicate-skip-functionality, then you can simply ignore the `should_skip`-output.
+If you do not care about the skip-features, then you can simply ignore the `should_skip`-output.
 In this case, the integration reduces to three lines:
 
 ```yml
