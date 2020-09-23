@@ -64,7 +64,7 @@ If true, then workflow-runs from outdated commits will be cancelled. Default `tr
 
 ### `should_skip`
 
-true if the current run is a duplicate workflow-run. This should be evaluated for either individual steps or entire jobs.
+true if the current run can be safely skipped. This should be evaluated for either individual steps or entire jobs.
 
 ## Usage examples
 

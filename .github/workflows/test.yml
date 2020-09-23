@@ -11,6 +11,7 @@ jobs:
         uses: fkirc/skip-duplicate-actions@master
         with:
           github_token: ${{ github.token }}
+          paths_ignore: ["**/README.md", "**/docs/**"]
 
   main_job:
     needs: pre_job
@@ -28,6 +29,7 @@ jobs:
         uses: fkirc/skip-duplicate-actions@master
         with:
           github_token: ${{ github.token }}
+          paths_ignore: ["**/README.md", "**/docs/**"]
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
           echo "Running slow tests..." && sleep 60
@@ -45,7 +47,6 @@ jobs:
         uses: ./ # Uses this Action in the root directory
         with:
           github_token: ${{ github.token }}
-          paths_ignore: '["**/README.md", "**/docs/**"]'
           cancel_others: 'false'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
