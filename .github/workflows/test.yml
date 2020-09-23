@@ -21,7 +21,6 @@ jobs:
       - run: echo "Running slow tests..." && sleep 30
 
 
-
   skip_individual_steps_job:
     runs-on: ubuntu-latest
     steps:
