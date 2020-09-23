@@ -32,7 +32,7 @@ jobs:
           paths: '["src/**", "dist/**"]'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
-          echo "Run if src/ changed..." && sleep 60
+          echo "Run only if src/ or dist/ changed..." && sleep 60
           echo "Do other stuff..."
 
 
@@ -48,6 +48,7 @@ jobs:
         with:
           github_token: ${{ github.token }}
           paths_ignore: '["**/README.md", "**/docs/**"]'
+          paths: '["src/**", "dist/**"]'
           cancel_others: 'false'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
