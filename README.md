@@ -26,10 +26,15 @@ For example, duplicate workflow-runs can happen if a workflow runs on a feature 
 ## Skip ignored paths
 
 In many projects, it is unnecessary to run all tests for documentation-only-changes.
-Therefore, GitHub provides a `paths-ignore` feature [out of the box](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#onpushpull_requestpaths).
-However, GitHub's `paths-ignore` has some limitations:
+Therefore, GitHub provides a [paths-ignore](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#onpushpull_requestpaths) feature out of the box.
+However, GitHub's `paths-ignore` has some limitations:gnore￼
+Note: Any person or integration with write permissions to a repository can set the state of any status check in the repository. GitHub does not verify that the author of a check is authorized to create a check with a certain name or modify an existing status. Before merging a pull request, you should verify that the author of each status, listed in the merge box, is expected.
 
-- GitHub's `path-ignore` does not work for _required checks_. If you path-ignore a required check, then pull requests will block forever without being mergeable. 
+Administrators of a repository can merge a protected branch even if required status checks have failed or are pending. You can require administrators to be subject to required status checks. For more information, see "Enabling required status checks."
+
+
+
+- GitHub's `path-ignore` does not work for [required checks](https://docs.github.com/en/github/administering-a-repository/about-required-status-checks). If you path-ignore a required check, then pull requests will block forever without being mergeable. 
 - Although GitHub's `path-ignore` works well with `pull_request`-triggers, it does not really work with `push`-triggers.
 
 To overcome those limitations, `skip-duplicate-action` provides a more flexible `paths_ignore` feature with an efficient backtracking-algorithm.
@@ -88,7 +93,7 @@ jobs:
         uses: fkirc/skip-duplicate-actions@master
         with:
           github_token: ${{ github.token }}
-          paths_ignore: ["**/README.md", "**/docs/**"]
+          paths_ignore: '["**/README.md", "**/docs/**"]'
 
   main_job:
     needs: pre_job
@@ -112,7 +117,7 @@ jobs:
         uses: fkirc/skip-duplicate-actions@master
         with:
           github_token: ${{ github.token }}
-          paths_ignore: ["**/README.md", "**/docs/**"]
+          paths_ignore: '["**/README.md", "**/docs/**"]'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
           echo "Running slow tests..." && sleep 60
