@@ -8,6 +8,9 @@ inputs:
   github_token:
     description: 'Your GitHub Access Token'
     required: true
+  paths_ignore:
+    description: 'A JSON-array with ignored path patterns, e.g. something like ["**/README.md", "**/docs/**"]'
+    required: true
   cancel_others:
     description: 'If true, then workflow-runs from outdated commits will be cancelled'
     required: false

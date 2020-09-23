@@ -1,12 +1,13 @@
 # Skip Duplicate Actions
 
-`skip-duplicate-actions` provides two separate features for [GitHub Actions](https://github.com/features/actions):
+`skip-duplicate-actions` provides the following features for [GitHub Actions](https://github.com/features/actions):
 
 - [Skip duplicate workflow-runs](#skip-duplicate-workflow-runs) after merges, pull requests or similar.
+- [Skip ignored paths](#skip-ignored-paths) to speedup documentation-changes or similar.
 - [Cancel outdated workflow-runs](#cancel-outdated-workflow-runs) after branch-pushes.
 
-Both features help to save time and costs; especially for long-running workflows.
-You can choose either one or both of those features.
+All of those features help to save time and costs; especially for long-running workflows.
+You can choose any subset of those features.
 
 ## Skip duplicate workflow-runs
 
@@ -14,27 +15,45 @@ If you work with feature branches, then you might see lots of _duplicate workflo
 For example, duplicate workflow-runs can happen if a workflow runs on a feature branch, but then the workflow is repeated right after merging the feature branch.
 `skip-duplicate-actions` helps to prevent such unnecessary runs.
 
-- **Full traceability:** After clean merges, you will see a message like `Skip execution because the exact same files have been successfully checked in https://github.com/fkirc/skip-duplicate-actions/actions/runs/263149724`.
+- **Full traceability:** After clean merges, you will see a message like `Skip execution because the exact same files have been successfully checked in <previous_run_URL>`.
 - **Skip concurrent workflow-runs:** If the same workflow is unnecessarily triggered twice, then one of the workflow-runs will be skipped.
   For example, this can happen when you push a tag right after pushing a commit.
 - **Respect manual triggers:** If you manually trigger a workflow with `workflow_dispatch`, then the workflow-run will not be skipped.
 - **Flexible Git usage:** `skip-duplicate-actions` does not care whether you use fast-forward-merges, rebase-merges or squash-merges.
   However, if a merge yields a result that is different from the source branch, then the resulting workflow-run will _not_ be skipped.
   This is commonly the case if you merge "outdated branches".
+
+## Skip ignored paths
+
+In many projects, it is unnecessary to run all tests for documentation-only-changes.
+Therefore, GitHub provides a `paths-ignore` feature [out of the box](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#onpushpull_requestpaths).
+However, GitHub's `paths-ignore` has some limitations:
+
+- GitHub's `path-ignore` does not work for _required checks_. If you path-ignore a required check, then pull requests will block forever without being mergeable. 
+- Although GitHub's `path-ignore` works well with `pull_request`-triggers, it does not really work with `push`-triggers.
+
+To overcome those limitations, `skip-duplicate-action` provides a more flexible `paths_ignore` feature with an efficient backtracking-algorithm.
+Instead of stupidly looking at the current commit, `paths_ignore` will look for successful checks in the commit-history.
   
 ## Cancel outdated workflow-runs
 
 Typically, workflows should only run for the most recent commit.
 Therefore, when you push changes to a branch, `skip-duplicate-actions` will cancel any previous workflow-runs that run against outdated commits.
 
-- **Full traceability:** If a workflow-run is cancelled, then you will see a message like `Cancelled https://github.com/fkirc/skip-duplicate-actions/actions/runs/263149724`.
-- **Guaranteed execution:** Despite the complexity, the cancellation algorithm guarantees that a complete check-set will finish no matter what.
+- **Full traceability:** If a workflow-run is cancelled, then you will see a message like `Cancelled <previous_run_URL>`.
+- **Guaranteed execution:** The cancellation-algorithm guarantees that a complete check-set will finish no matter what.
 
 ## Inputs
 
 ### `github_token`
 
 **Required** Your access token for GitHub.
+
+### `paths_ignore`
+
+A JSON-array with ignored path-patterns, e.g. something like `["**/README.md", "**/docs/**"]`.
+See [micromatch](https://github.com/micromatch/micromatch) for details about supported path-patterns.
+Default `[]`.
 
 ### `cancel_others`
 
@@ -68,6 +87,7 @@ jobs:
         uses: fkirc/skip-duplicate-actions@master
         with:
           github_token: ${{ github.token }}
+          paths_ignore: ["**/README.md", "**/docs/**"]
 
   main_job:
     needs: pre_job
@@ -91,6 +111,7 @@ jobs:
         uses: fkirc/skip-duplicate-actions@master
         with:
           github_token: ${{ github.token }}
+          paths_ignore: ["**/README.md", "**/docs/**"]
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
           echo "Running slow tests..." && sleep 60
@@ -118,3 +139,6 @@ After querying such workflow-runs, it will compare them with the current workflo
 
 - If there exists a workflow-runs with the same tree hash, then we have identified a duplicate workflow-run.
 - If there exists an in-progress workflow-run that matches the current branch but not the current tree hash, then this workflow-run will be cancelled.
+
+`skip-duplicate-actions` uses the [Repos Commit API](https://docs.github.com/en/rest/reference/repos#get-a-commit) to perform an efficient backtracking-algorithm for `paths_ignore` change detection.
+

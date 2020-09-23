@@ -1,12 +1,18 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import {ActionsListWorkflowRunsResponseData, ActionsGetWorkflowRunResponseData} from '@octokit/types'
+import {
+  ActionsGetWorkflowRunResponseData,
+  ActionsListWorkflowRunsResponseData,
+  ReposGetCommitResponseData
+} from '@octokit/types'
+const micromatch = require('micromatch');
 
 type WorkflowRunStatus = 'queued' | 'in_progress' | 'completed'
 type WorkflowRunConclusion = 'success' | 'failure' | 'neutral' | 'cancelled' | 'skipped' | 'timed_out'
 
 interface WorkflowRun {
   treeHash: string;
+  commitHash: string;
   status: WorkflowRunStatus;
   conclusion: WorkflowRunConclusion | null;
   html_url: string;
@@ -22,7 +28,13 @@ interface WRunContext {
   currentRun: WorkflowRun;
   otherRuns: WorkflowRun[];
   octokit: any;
+  pathsIgnore: string[] | null;
 }
+
+// interface GCommit {
+//   files: PullsListFilesResponseData[] | null;
+//   parentSha: string | null;
+// }
 
 function parseWorkflowRun(run: ActionsGetWorkflowRunResponseData): WorkflowRun {
   const treeHash = run.head_commit?.tree_id;
@@ -35,6 +47,7 @@ function parseWorkflowRun(run: ActionsGetWorkflowRunResponseData): WorkflowRun {
   }
   return {
     treeHash,
+    commitHash: run.head_sha,
     status: run.status as WorkflowRunStatus,
     conclusion: run.conclusion as WorkflowRunConclusion ?? null,
     html_url: run.html_url,
@@ -95,19 +108,22 @@ async function main() {
     currentRun,
     otherRuns,
     octokit,
+    pathsIgnore: getStringArrayInput("paths_ignore"),
   };
 
-  await cancelOutdatedRuns(context);
-
-  const duplicateRuns = otherRuns.filter((run) => run.treeHash === currentRun.treeHash);
-  detectDuplicateRunsAndExit(duplicateRuns);
+  const cancelOthers = getBooleanInput('cancel_others', true);
+  if (cancelOthers) {
+    await cancelOutdatedRuns(context);
+  }
+  detectDuplicateRuns(context);
+  if (context.pathsIgnore) {
+    await detectPathIgnore(context);
+  }
+  core.info("Do not skip execution because we did not find a transferable run");
+  exitSuccess({ shouldSkip: false });
 }
 
-async function cancelOutdatedRuns(context: WRunContext,) {
-  const cancelOthers = getBooleanInput('cancel_others', true);
-  if (!cancelOthers) {
-    return core.info(`Skip cancellation because 'cancel_others' is set to false`);
-  }
+async function cancelOutdatedRuns(context: WRunContext) {
   const currentRun = context.currentRun;
   const cancelVictims = context.otherRuns.filter((run) => {
     if (run.status === 'completed') {
@@ -137,7 +153,9 @@ async function cancelWorkflowRun(run: WorkflowRun, context: WRunContext) {
   }
 }
 
-function detectDuplicateRunsAndExit(duplicateRuns: WorkflowRun[]) {
+function detectDuplicateRuns(context: WRunContext) {
+  const duplicateRuns = context.otherRuns.filter((run) => run.treeHash === context.currentRun.treeHash);
+
   if (github.context.eventName === 'workflow_dispatch') {
     core.info("Do not skip execution because the workflow was triggered with workflow_dispatch");
     exitSuccess({ shouldSkip: false });
@@ -162,8 +180,71 @@ function detectDuplicateRunsAndExit(duplicateRuns: WorkflowRun[]) {
   if (failedDuplicate) {
     logFatal(`Trigger a failure because ${failedDuplicate.html_url} has already failed with the exact same files. You can use 'workflow_dispatch' to manually enforce a re-run.`);
   }
-  core.info("Do not skip execution because we did not find a duplicate run");
-  exitSuccess({ shouldSkip: false });
+}
+
+async function detectPathIgnore(context: WRunContext) {
+  let commit: ReposGetCommitResponseData | null;
+  let iterSha: string | null = context.currentRun.commitHash;
+  let distanceToHEAD = 0;
+  do {
+    commit = await fetchCommitDetails(iterSha, context);
+    if (!commit) {
+      return;
+    }
+    iterSha = commit.parents?.length ? commit.parents[0]?.sha : null;
+
+    exitIfSuccessfulRunExists(commit, context);
+    if (distanceToHEAD++ >= 50) {
+      // Should be never reached in practice; we expect that this loop aborts after 1-3 iterations.
+      core.warning(`Aborted commit-backtracing due to bad performance - Did you push an excessive number of ignored-path-commits?`);
+      return;
+    }
+  } while (allChangesIgnored(commit, context));
+}
+
+function exitIfSuccessfulRunExists(commit: ReposGetCommitResponseData, context: WRunContext) {
+  const treeHash = commit.commit.tree.sha;
+  const matchingRuns = context.otherRuns.filter((run) => run.treeHash === treeHash);
+  const successfulRun = matchingRuns.find((run) => {
+    return run.status === 'completed' && run.conclusion === 'success';
+  });
+  if (successfulRun) {
+    core.info(`Skip execution because all changes since ${successfulRun.html_url} are in ignored paths`);
+    exitSuccess({ shouldSkip: true });
+  }
+}
+
+function allChangesIgnored(commit: ReposGetCommitResponseData, context: WRunContext): boolean {
+  if (!context.pathsIgnore) {
+    logFatal("pathsIgnore checked too late");
+  }
+  const paths = commit.files.map((f) => f.filename);
+  const patterns = context.pathsIgnore;
+  const notIgnoredPaths = micromatch.not(paths, patterns);
+  const allPathsIgnored = notIgnoredPaths.length == 0;
+  if (allPathsIgnored) {
+    core.info(`Commit ${commit.html_url} contains only ignored files: ${paths}`);
+  }
+  return allPathsIgnored;
+}
+
+async function fetchCommitDetails(sha: string | null, context: WRunContext): Promise<ReposGetCommitResponseData | null> {
+  if (!sha) {
+    return null;
+  }
+  try {
+    const res = await context.octokit.repos.getCommit({
+      owner: context.repoOwner,
+      repo: context.repoName,
+      ref: sha,
+    });
+    //core.info(`Fetched ${res} with response code ${res.status}`);
+    return res.data;
+  } catch (e) {
+    core.warning(e);
+    core.warning(`Failed to retrieve commit ${sha}`);
+    return null;
+  }
 }
 
 function exitSuccess(args: { shouldSkip: boolean }): never {
@@ -183,6 +264,28 @@ function getBooleanInput(name: string, defaultValue: boolean): boolean {
   }
 }
 
+function getStringArrayInput(name: string): string[] | null {
+  const rawInput = core.getInput(name, { required: false });
+  if (!rawInput) {
+    return null;
+  }
+  try {
+    const array = JSON.parse(rawInput);
+    if (!Array.isArray(array)) {
+      logFatal(`Input '${rawInput}' is not a JSON-array`);
+    }
+    array.forEach((e) => {
+      if (typeof e !== "string") {
+        logFatal(`Element '${e}' of input '${rawInput}' is not a string`);
+      }
+    });
+    return array;
+  } catch (e) {
+    core.error(e);
+    logFatal(`Input '${rawInput}' is not a valid JSON`);
+  }
+}
+
 function logFatal(msg: string): never {
   core.setFailed(msg);
   return process.exit(1) as never;
@@ -190,6 +293,5 @@ function logFatal(msg: string): never {
 
 main().catch((e) => {
   core.error(e);
-  //console.error(e);
   logFatal(e.message);
 });
