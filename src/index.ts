@@ -235,9 +235,7 @@ function isCommitPathIgnored(commit: ReposGetCommitResponseData, context: WRunCo
   }
   // Skip if all changed files match against pathsIgnore.
   const changedFiles = commit.files.map((f) => f.filename);
-  core.info(context.pathsIgnore.toString());
   const notIgnoredPaths = micromatch.not(changedFiles, context.pathsIgnore,  globOptions);
-  core.info(notIgnoredPaths);
   return notIgnoredPaths.length === 0;
 }
 
