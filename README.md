@@ -140,4 +140,5 @@ After querying such workflow-runs, it will compare them with the current workflo
 - If there exists a workflow-runs with the same tree hash, then we have identified a duplicate workflow-run.
 - If there exists an in-progress workflow-run that matches the current branch but not the current tree hash, then this workflow-run will be cancelled.
 
-https://docs.github.com/en/rest/reference/repos#get-a-commit
+`skip-duplicate-actions` uses the [Repos Commit API](https://docs.github.com/en/rest/reference/repos#get-a-commit) to perform an efficient backtracking-algorithm for `path_ignore` change detection.
+
