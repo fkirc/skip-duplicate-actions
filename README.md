@@ -4,7 +4,7 @@
 
 - [Skip duplicate workflow-runs](#skip-duplicate-workflow-runs) after merges, pull requests or similar.
 - [Skip ignored paths](#skip-ignored-paths) to speedup documentation-changes or similar.
-- [Skip if paths not changed](#skip-if-paths-not-changed) for something like platform-specific tests.
+- [Skip if paths not changed](#skip-if-paths-not-changed) for something like directory-specific tests.
 - [Cancel outdated workflow-runs](#cancel-outdated-workflow-runs) after branch-pushes.
 
 All of those features help to save time and costs; especially for long-running workflows.
@@ -34,20 +34,20 @@ However, GitHub's `paths-ignore` has some limitations:
   If you path-ignore a required check, then pull requests will block forever without being mergeable.
 - Although GitHub's `paths-ignore` works well with `pull_request`-triggers, it does not really work with `push`-triggers.
 
-To overcome those limitations, `skip-duplicate-actions` provides a more flexible `paths_ignore` feature with an efficient backtracking-algorithm.
+To overcome those limitations, `skip-duplicate-actions` provides a more flexible `paths_ignore`-feature with an efficient backtracking-algorithm.
 Instead of stupidly looking at the current commit, `paths_ignore` will look for successful checks in your commit-history.
 
 ## Skip if paths not changed
 
-In some projects, there are tests that should be only executed if some specific sub-directories were changed.
+In some projects, there are tasks that should be only executed if specific sub-directories were changed.
 Therefore, GitHub provides a [paths](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#onpushpull_requestpaths) feature out of the box.
 However, GitHub's `paths` has some limitations:
 
 - GitHub's `paths` cannot skip individual steps in a workflow.
-- GitHub's `paths` does not really work with `push`-triggers.
+- GitHub's `paths` does not work with required checks that you really want to pass successfully.
 
-To overcome those limitations, `skip-duplicate-actions` provides a more sophisticated `paths` feature.
-Instead of blindly skipping tests, the backtracking-algorithm will only skip if it can find a suitable check in your commit-history.
+To overcome those limitations, `skip-duplicate-actions` provides a more sophisticated `paths`-feature.
+Instead of blindly skipping checks, the backtracking-algorithm will only skip if it can find a suitable check in your commit-history.
 
 ## Cancel outdated workflow-runs
 
