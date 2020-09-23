@@ -52,6 +52,7 @@ Therefore, when you push changes to a branch, `skip-duplicate-actions` will canc
 ### `paths_ignore`
 
 A JSON-array with ignored path-patterns, e.g. something like `["**/README.md", "**/docs/**"]`.
+See [cheat sheet](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#filter-pattern-cheat-sheet) for path-pattern examples.
 See [micromatch](https://github.com/micromatch/micromatch) for details about supported path-patterns.
 Default `[]`.
 
