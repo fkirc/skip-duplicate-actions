@@ -47,6 +47,7 @@ jobs:
         uses: ./ # Uses this Action in the root directory
         with:
           github_token: ${{ github.token }}
+          paths_ignore: '["**/README.md", "**/docs/**"]'
           cancel_others: 'false'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
