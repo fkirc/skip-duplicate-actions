@@ -32,8 +32,8 @@ However, GitHub's `paths-ignore` has some limitations:
 - GitHub's `path-ignore` does not work for _required checks_. If you path-ignore a required check, then pull requests will block forever without being mergeable. 
 - Although GitHub's `path-ignore` works well with `pull_request`-triggers, it does not really work with `push`-triggers.
 
-To overcome those limitations, `skip-duplicate-action` provides a more flexible `path_ignore` feature with an efficient backtracking-algorithm.
-Instead of stupidly looking at the current commit, `path_ignore` will look for successful checks in the commit-history.
+To overcome those limitations, `skip-duplicate-action` provides a more flexible `paths_ignore` feature with an efficient backtracking-algorithm.
+Instead of stupidly looking at the current commit, `paths_ignore` will look for successful checks in the commit-history.
   
 ## Cancel outdated workflow-runs
 
@@ -140,5 +140,5 @@ After querying such workflow-runs, it will compare them with the current workflo
 - If there exists a workflow-runs with the same tree hash, then we have identified a duplicate workflow-run.
 - If there exists an in-progress workflow-run that matches the current branch but not the current tree hash, then this workflow-run will be cancelled.
 
-`skip-duplicate-actions` uses the [Repos Commit API](https://docs.github.com/en/rest/reference/repos#get-a-commit) to perform an efficient backtracking-algorithm for `path_ignore` change detection.
+`skip-duplicate-actions` uses the [Repos Commit API](https://docs.github.com/en/rest/reference/repos#get-a-commit) to perform an efficient backtracking-algorithm for `paths_ignore` change detection.
 
