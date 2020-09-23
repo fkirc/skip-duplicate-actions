@@ -4,6 +4,7 @@
 
 - [Skip duplicate workflow-runs](#skip-duplicate-workflow-runs) after merges, pull requests or similar.
 - [Skip ignored paths](#skip-ignored-paths) to speedup documentation-changes or similar.
+- [Skip if paths not changed](#skip-if-paths-not-changed) for something like platform-specific tests.
 - [Cancel outdated workflow-runs](#cancel-outdated-workflow-runs) after branch-pushes.
 
 All of those features help to save time and costs; especially for long-running workflows.
@@ -34,8 +35,20 @@ However, GitHub's `paths-ignore` has some limitations:
 - Although GitHub's `paths-ignore` works well with `pull_request`-triggers, it does not really work with `push`-triggers.
 
 To overcome those limitations, `skip-duplicate-actions` provides a more flexible `paths_ignore` feature with an efficient backtracking-algorithm.
-Instead of stupidly looking at the current commit, `paths_ignore` will look for successful checks in the commit-history.
-  
+Instead of stupidly looking at the current commit, `paths_ignore` will look for successful checks in your commit-history.
+
+## Skip if paths not changed
+
+In some projects, there are tests that should be only executed if some specific sub-directories were changed.
+Therefore, GitHub provides a [paths](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#onpushpull_requestpaths) feature out of the box.
+However, GitHub's `paths` has some limitations:
+
+- GitHub's `paths` cannot skip individual steps in a workflow.
+- GitHub's `paths` does not really work with `push`-triggers.
+
+To overcome those limitations, `skip-duplicate-actions` provides a more sophisticated `paths` feature.
+Instead of blindly skipping tests, the backtracking-algorithm will only skip if it can find a suitable check in your commit-history.
+
 ## Cancel outdated workflow-runs
 
 Typically, workflows should only run for the most recent commit.
@@ -55,6 +68,13 @@ Therefore, when you push changes to a branch, `skip-duplicate-actions` will canc
 A JSON-array with ignored path-patterns, e.g. something like `'["**/README.md", "**/docs/**"]'`.
 See [cheat sheet](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#filter-pattern-cheat-sheet) for path-pattern examples.
 See [micromatch](https://github.com/micromatch/micromatch) for details about supported path-patterns.
+Default `[]`.
+
+### `paths`
+
+A JSON-array with path-patterns, e.g. something like `'["platform-specific/**"]'`.
+If this is non-empty, then `skip-duplicate-actions` will try to skip commits that did not change any of those paths.
+It uses the same syntax as `paths_ignore`.
 Default `[]`.
 
 ### `cancel_others`
@@ -142,5 +162,5 @@ After querying such workflow-runs, it will compare them with the current workflo
 - If there exists a workflow-runs with the same tree hash, then we have identified a duplicate workflow-run.
 - If there exists an in-progress workflow-run that matches the current branch but not the current tree hash, then this workflow-run will be cancelled.
 
-`skip-duplicate-actions` uses the [Repos Commit API](https://docs.github.com/en/rest/reference/repos#get-a-commit) to perform an efficient backtracking-algorithm for `paths_ignore` change detection.
-
+`skip-duplicate-actions` uses the [Repos Commit API](https://docs.github.com/en/rest/reference/repos#get-a-commit) to perform an efficient backtracking-algorithm for paths-skipping-detection.
+Moreover, a synergy with the cancellation-feature reduces the number of REST API calls.
