@@ -225,13 +225,18 @@ function isCommitSkippable(commit: ReposGetCommitResponseData, context: WRunCont
   return false;
 }
 
+const globOptions = {
+  dot: true, // Match dotfiles. Otherwise dotfiles are ignored unless a . is explicitly defined in the pattern.
+};
+
 function isCommitPathIgnored(commit: ReposGetCommitResponseData, context: WRunContext): boolean {
   if (!context.pathsIgnore.length) {
     return false;
   }
   // Skip if all changed files match against pathsIgnore.
   const changedFiles = commit.files.map((f) => f.filename);
-  return micromatch.every(changedFiles, context.pathsIgnore);
+  const notIgnoredPaths = micromatch.not(changedFiles, context.pathsIgnore,  globOptions);
+  return notIgnoredPaths.length === 0;
 }
 
 function isCommitPathSkipped(commit: ReposGetCommitResponseData, context: WRunContext): boolean {
@@ -240,7 +245,7 @@ function isCommitPathSkipped(commit: ReposGetCommitResponseData, context: WRunCo
   }
   // Skip if none of the changed files matches against context.paths.
   const changedFiles = commit.files.map((f) => f.filename);
-  const matchExists = micromatch.some(changedFiles, context.paths);
+  const matchExists = micromatch.some(changedFiles, context.paths, globOptions);
   return !matchExists;
 }
 

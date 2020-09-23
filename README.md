@@ -133,10 +133,10 @@ jobs:
         uses: fkirc/skip-duplicate-actions@master
         with:
           github_token: ${{ github.token }}
-          paths: '["src/**"]'
+          paths: '["src/**", "dist/**"]'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
-          echo "Run only if src/ changed..." && sleep 60
+          echo "Run only if src/ or dist/ changed..." && sleep 60
           echo "Do other stuff..."
 ```
 

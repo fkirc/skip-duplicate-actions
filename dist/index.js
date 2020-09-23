@@ -9994,19 +9994,23 @@ function isCommitSkippable(commit, context) {
     }
     return false;
 }
+const globOptions = {
+    dot: true,
+};
 function isCommitPathIgnored(commit, context) {
     if (!context.pathsIgnore.length) {
         return false;
     }
     const changedFiles = commit.files.map((f) => f.filename);
-    return micromatch.every(changedFiles, context.pathsIgnore);
+    const notIgnoredPaths = micromatch.not(changedFiles, context.pathsIgnore, globOptions);
+    return notIgnoredPaths.length === 0;
 }
 function isCommitPathSkipped(commit, context) {
     if (!context.paths.length) {
         return false;
     }
     const changedFiles = commit.files.map((f) => f.filename);
-    const matchExists = micromatch.some(changedFiles, context.paths);
+    const matchExists = micromatch.some(changedFiles, context.paths, globOptions);
     return !matchExists;
 }
 async function fetchCommitDetails(sha, context) {
