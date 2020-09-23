@@ -1,6 +1,6 @@
 # Skip Duplicate Actions
 
-`skip-duplicate-actions` provides the following features for [GitHub Actions](https://github.com/features/actions):
+`skip-duplicate-actions` provides the following features to optimize GitHub Actions:
 
 - [Skip duplicate workflow-runs](#skip-duplicate-workflow-runs) after merges, pull requests or similar.
 - [Skip ignored paths](#skip-ignored-paths) to speedup documentation-changes or similar.

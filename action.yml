@@ -1,5 +1,5 @@
 name: 'Skip Duplicate Actions'
-description: 'Skip duplicate workflow-runs. Cancel outdated workflow-runs.'
+description: 'Skip duplicate workflow-runs. Skip ignored paths. Cancel outdated workflow-runs.'
 author: fkirc
 branding:
   icon: 'stop-circle'
