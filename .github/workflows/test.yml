@@ -48,7 +48,7 @@ jobs:
         with:
           github_token: ${{ github.token }}
           paths_ignore: '["**/README.md", "**/docs/**", "**/**.yml", "**/*.yml"]'
-          #paths: '["src/**", "dist/**"]'
+          paths: '["non-existing-stuff"]'
           cancel_others: 'false'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
