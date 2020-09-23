@@ -30,9 +30,9 @@ In many projects, it is unnecessary to run all tests for documentation-only-chan
 Therefore, GitHub provides a [paths-ignore](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#onpushpull_requestpaths) feature out of the box.
 However, GitHub's `paths-ignore` has some limitations:
 
-- GitHub's `paths-ignore` does not work for [required checks](https://docs.github.com/en/github/administering-a-repository/about-required-status-checks).
+- GitHub's `paths-ignore` fails to look at previous commits. This means that the outcome depends on how often you push changes.
+- Consequently, GitHub's `paths-ignore` does not work for [required checks](https://docs.github.com/en/github/administering-a-repository/about-required-status-checks).
   If you path-ignore a required check, then pull requests will block forever without being mergeable.
-- Although GitHub's `paths-ignore` works well with `pull_request`-triggers, it does not really work with `push`-triggers.
 
 To overcome those limitations, `skip-duplicate-actions` provides a more flexible `paths_ignore`-feature with an efficient backtracking-algorithm.
 Instead of stupidly looking at the current commit, `paths_ignore` will look for successful checks in your commit-history.
