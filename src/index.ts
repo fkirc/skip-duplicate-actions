@@ -184,25 +184,26 @@ function detectDuplicateRuns(context: WRunContext) {
 }
 
 async function detectPathIgnore(context: WRunContext) {
-  // TODO: check if feature is enabled, read from input
+  let commit: ReposGetCommitResponseData | null;
   let iterSha: string | null = context.currentRun.commitHash;
-  const MAX_BACKTRACE = 50; // Should be never reached in practice; we expect that this loop aborts after 1-3 iterations.
-  for (let distanceToHEAD = 0; distanceToHEAD <= MAX_BACKTRACE; distanceToHEAD++) {
-    const commit: ReposGetCommitResponseData | null = await fetchCommitDetails(iterSha, context);
-    iterSha = commit?.parents?.length ? commit.parents[0]?.sha : null;
-    console.log(commit); // TODO: Remove
-    exitIfSuccessfulRunExists(commit, context);
-    if (!isCommitPathIgnored(commit, context)) {
+  let distanceToHEAD = 0;
+  do {
+    commit = await fetchCommitDetails(iterSha, context);
+    if (!commit) {
       return;
     }
-  }
-  core.warning(`Aborted commit-backtracing due to bad performance - Did you push an excessive number of ignored-path-commits?`);
+    iterSha = commit.parents?.length ? commit.parents[0]?.sha : null;
+
+    exitIfSuccessfulRunExists(commit, context);
+    if (distanceToHEAD++ >= 50) {
+      // Should be never reached in practice; we expect that this loop aborts after 1-3 iterations.
+      core.warning(`Aborted commit-backtracing due to bad performance - Did you push an excessive number of ignored-path-commits?`);
+      return;
+    }
+  } while (allChangesIgnored(commit, context));
 }
 
-function exitIfSuccessfulRunExists(commit: ReposGetCommitResponseData | null, context: WRunContext) {
-  if (!commit) {
-    return;
-  }
+function exitIfSuccessfulRunExists(commit: ReposGetCommitResponseData, context: WRunContext) {
   const treeHash = commit.commit.tree.sha;
   const matchingRuns = context.otherRuns.filter((run) => run.treeHash === treeHash);
   const successfulRun = matchingRuns.find((run) => {
@@ -214,27 +215,18 @@ function exitIfSuccessfulRunExists(commit: ReposGetCommitResponseData | null, co
   }
 }
 
-function isCommitPathIgnored(commit: ReposGetCommitResponseData | null, context: WRunContext): boolean {
-  if (!commit) {
-    return false;
-  }
-  const paths = commit.files.map((f) => f.filename);
-  console.info(`Match ignored paths ${paths} with matchers ${context.pathsIgnore}`); // TODO: Remove
-  for (const path of paths) {
-    if (!isSinglePathIgnored(path, context)) {
-      return false;
-    }
-  }
-  console.info(`Detected a commit with only ignored paths: ${paths}`);
-  return true;
-}
-
-function isSinglePathIgnored(path: string, context: WRunContext): boolean {
+function allChangesIgnored(commit: ReposGetCommitResponseData, context: WRunContext): boolean {
   if (!context.pathsIgnore) {
     logFatal("pathsIgnore checked too late");
   }
+  const paths = commit.files.map((f) => f.filename);
   const patterns = context.pathsIgnore;
-  return micromatch.isMatch(path, patterns);
+  const notIgnoredPaths = micromatch.not(paths, patterns);
+  const allPathsIgnored = notIgnoredPaths.length == 0;
+  if (allPathsIgnored) {
+    console.info(`Commit ${commit.sha} contains only ignored files: ${paths}`);
+  }
+  return allPathsIgnored;
 }
 
 async function fetchCommitDetails(sha: string | null, context: WRunContext): Promise<ReposGetCommitResponseData | null> {

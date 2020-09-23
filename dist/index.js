@@ -9954,23 +9954,23 @@ function detectDuplicateRuns(context) {
 }
 async function detectPathIgnore(context) {
     var _a, _b;
+    let commit;
     let iterSha = context.currentRun.commitHash;
-    const MAX_BACKTRACE = 50;
-    for (let distanceToHEAD = 0; distanceToHEAD <= MAX_BACKTRACE; distanceToHEAD++) {
-        const commit = await fetchCommitDetails(iterSha, context);
-        iterSha = ((_a = commit === null || commit === void 0 ? void 0 : commit.parents) === null || _a === void 0 ? void 0 : _a.length) ? (_b = commit.parents[0]) === null || _b === void 0 ? void 0 : _b.sha : null;
-        console.log(commit);
-        exitIfSuccessfulRunExists(commit, context);
-        if (!isCommitPathIgnored(commit, context)) {
+    let distanceToHEAD = 0;
+    do {
+        commit = await fetchCommitDetails(iterSha, context);
+        if (!commit) {
             return;
         }
-    }
-    core.warning(`Aborted commit-backtracing due to bad performance - Did you push an excessive number of ignored-path-commits?`);
+        iterSha = ((_a = commit.parents) === null || _a === void 0 ? void 0 : _a.length) ? (_b = commit.parents[0]) === null || _b === void 0 ? void 0 : _b.sha : null;
+        exitIfSuccessfulRunExists(commit, context);
+        if (distanceToHEAD++ >= 50) {
+            core.warning(`Aborted commit-backtracing due to bad performance - Did you push an excessive number of ignored-path-commits?`);
+            return;
+        }
+    } while (allChangesIgnored(commit, context));
 }
 function exitIfSuccessfulRunExists(commit, context) {
-    if (!commit) {
-        return;
-    }
     const treeHash = commit.commit.tree.sha;
     const matchingRuns = context.otherRuns.filter((run) => run.treeHash === treeHash);
     const successfulRun = matchingRuns.find((run) => {
@@ -9981,26 +9981,18 @@ function exitIfSuccessfulRunExists(commit, context) {
         exitSuccess({ shouldSkip: true });
     }
 }
-function isCommitPathIgnored(commit, context) {
-    if (!commit) {
-        return false;
-    }
-    const paths = commit.files.map((f) => f.filename);
-    console.info(`Match ignored paths ${paths} with matchers ${context.pathsIgnore}`);
-    for (const path of paths) {
-        if (!isSinglePathIgnored(path, context)) {
-            return false;
-        }
-    }
-    console.info(`Detected a commit with only ignored paths: ${paths}`);
-    return true;
-}
-function isSinglePathIgnored(path, context) {
+function allChangesIgnored(commit, context) {
     if (!context.pathsIgnore) {
         logFatal("pathsIgnore checked too late");
     }
+    const paths = commit.files.map((f) => f.filename);
     const patterns = context.pathsIgnore;
-    return micromatch.isMatch(path, patterns);
+    const notIgnoredPaths = micromatch.not(paths, patterns);
+    const allPathsIgnored = notIgnoredPaths.length == 0;
+    if (allPathsIgnored) {
+        console.info(`Commit ${commit.sha} contains only ignored files: ${paths}`);
+    }
+    return allPathsIgnored;
 }
 async function fetchCommitDetails(sha, context) {
     if (!sha) {
