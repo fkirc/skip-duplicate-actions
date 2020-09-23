@@ -28,7 +28,7 @@ interface WRunContext {
   currentRun: WorkflowRun;
   otherRuns: WorkflowRun[];
   octokit: any;
-  pathsIgnore: string[] | null;
+  pathsIgnore: string[];
 }
 
 function parseWorkflowRun(run: ActionsGetWorkflowRunResponseData): WorkflowRun {
@@ -210,9 +210,6 @@ function exitIfSuccessfulRunExists(commit: ReposGetCommitResponseData, context: 
 }
 
 function allChangesIgnored(commit: ReposGetCommitResponseData, context: WRunContext): boolean {
-  if (!context.pathsIgnore) {
-    logFatal("pathsIgnore checked too late");
-  }
   const paths = commit.files.map((f) => f.filename);
   const patterns = context.pathsIgnore;
   const notIgnoredPaths = micromatch.not(paths, patterns);
@@ -259,10 +256,10 @@ function getBooleanInput(name: string, defaultValue: boolean): boolean {
   }
 }
 
-function getStringArrayInput(name: string): string[] | null {
+function getStringArrayInput(name: string): string[] {
   const rawInput = core.getInput(name, { required: false });
   if (!rawInput) {
-    return null;
+    return [];
   }
   try {
     const array = JSON.parse(rawInput);

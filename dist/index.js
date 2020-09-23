@@ -9982,9 +9982,6 @@ function exitIfSuccessfulRunExists(commit, context) {
     }
 }
 function allChangesIgnored(commit, context) {
-    if (!context.pathsIgnore) {
-        logFatal("pathsIgnore checked too late");
-    }
     const paths = commit.files.map((f) => f.filename);
     const patterns = context.pathsIgnore;
     const notIgnoredPaths = micromatch.not(paths, patterns);
@@ -10031,7 +10028,7 @@ function getBooleanInput(name, defaultValue) {
 function getStringArrayInput(name) {
     const rawInput = core.getInput(name, { required: false });
     if (!rawInput) {
-        return null;
+        return [];
     }
     try {
         const array = JSON.parse(rawInput);
