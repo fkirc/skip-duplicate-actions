@@ -231,10 +231,8 @@ function isCommitPathIgnored(commit: ReposGetCommitResponseData, context: WRunCo
   }
   // Skip if all changed files match against pathsIgnore.
   const changedFiles = commit.files.map((f) => f.filename);
-  core.info(`match ${changedFiles} against pathsIgnore ${context.pathsIgnore}`);
-  const pathIgnored = micromatch.every(changedFiles, context.pathsIgnore);
-  core.info(`pathIgnored is ${pathIgnored}`);
-  return pathIgnored;
+  const notIgnoredPaths = micromatch.not(changedFiles, context.pathsIgnore);
+  return notIgnoredPaths.length === 0;
 }
 
 function isCommitPathSkipped(commit: ReposGetCommitResponseData, context: WRunContext): boolean {
