@@ -9890,7 +9890,7 @@ async function main() {
         await cancelOutdatedRuns(context);
     }
     detectDuplicateRuns(context);
-    if (context.pathsIgnore) {
+    if (context.pathsIgnore && context.pathsIgnore.length >= 1) {
         await detectPathsIgnore(context);
     }
     core.info("Do not skip execution because we did not find a transferable run");
