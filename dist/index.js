@@ -9990,7 +9990,7 @@ function allChangesIgnored(commit, context) {
     const notIgnoredPaths = micromatch.not(paths, patterns);
     const allPathsIgnored = notIgnoredPaths.length == 0;
     if (allPathsIgnored) {
-        core.info(`Commit ${commit.sha} contains only ignored files: ${paths}`);
+        core.info(`Commit ${commit.html_url} contains only ignored files: ${paths}`);
     }
     return allPathsIgnored;
 }

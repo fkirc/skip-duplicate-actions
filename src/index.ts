@@ -119,7 +119,6 @@ async function main() {
   if (context.pathsIgnore) {
     await detectPathIgnore(context);
   }
-
   core.info("Do not skip execution because we did not find a transferable run");
   exitSuccess({ shouldSkip: false });
 }
@@ -224,7 +223,7 @@ function allChangesIgnored(commit: ReposGetCommitResponseData, context: WRunCont
   const notIgnoredPaths = micromatch.not(paths, patterns);
   const allPathsIgnored = notIgnoredPaths.length == 0;
   if (allPathsIgnored) {
-    core.info(`Commit ${commit.sha} contains only ignored files: ${paths}`);
+    core.info(`Commit ${commit.html_url} contains only ignored files: ${paths}`);
   }
   return allPathsIgnored;
 }
