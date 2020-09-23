@@ -121,8 +121,7 @@ jobs:
 
 ### Option 2: Skip individual steps
 
-If you do not want an additional `pre_job`, then you can use `skip-duplicate-actions` to skip individual steps.
-The following example demonstrates how to skip an individual step with an `if`-clause and an `id`:
+The following example demonstrates how to skip an individual step with an `if`-clause and an `id`.
 
 ```yml
 jobs:
@@ -133,11 +132,10 @@ jobs:
         uses: fkirc/skip-duplicate-actions@master
         with:
           github_token: ${{ github.token }}
-          paths_ignore: '["**/README.md", "**/docs/**"]'
+          paths: '["src/**"]'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
-          echo "Running slow tests..." && sleep 60
-          echo "Do other stuff..."
+          echo "Do something if src/ folder changed..." && sleep 60
 ```
 
 ### Option 3: Cancellation-only
