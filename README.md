@@ -122,6 +122,7 @@ jobs:
 ### Option 2: Skip individual steps
 
 The following example demonstrates how to skip an individual step with an `if`-clause and an `id`.
+In this example, the step will be skipped if no files in `src/` were changed:
 
 ```yml
 jobs:
@@ -135,7 +136,8 @@ jobs:
           paths: '["src/**"]'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
-          echo "Do something if src/ folder changed..." && sleep 60
+          echo "Run only if src/ changed..." && sleep 60
+          echo "Do other stuff..."
 ```
 
 ### Option 3: Cancellation-only
