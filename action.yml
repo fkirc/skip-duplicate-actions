@@ -1,5 +1,5 @@
 name: 'Skip Duplicate Actions'
-description: 'Skip duplicate workflow-runs. Skip ignored paths. Cancel outdated workflow-runs.'
+description: 'Skip duplicate workflow-runs. Skip or ignore specific paths. Cancel outdated workflow-runs.'
 author: fkirc
 branding:
   icon: 'stop-circle'
@@ -11,6 +11,11 @@ inputs:
   paths_ignore:
     description: 'A JSON-array with ignored path patterns, e.g. something like ["**/README.md", "**/docs/**"]'
     required: false
+    default: '[]'
+  paths:
+    description: 'A JSON-array with path patterns, e.g. something like ["platform-specific/**"]'
+    required: false
+    default: '[]'
   cancel_others:
     description: 'If true, then workflow-runs from outdated commits will be cancelled'
     required: false
@@ -18,7 +23,7 @@ inputs:
 
 outputs:
   should_skip:
-    description: 'true if the current run is a duplicate workflow-run. This should be evaluated for either individual steps or entire jobs.'
+    description: 'true if the current run can be safely skipped. This should be evaluated for either individual steps or entire jobs.'
 runs:
   using: 'node12'
   main: 'dist/index.js'
