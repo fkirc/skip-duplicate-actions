@@ -5804,6 +5804,7 @@ async function main() {
         currentRun,
         otherRuns,
         octokit,
+        pathsIgnore: getStringArrayInput("paths_ignore"),
     };
     await cancelOutdatedRuns(context);
     detectDuplicateRuns(context);
@@ -5880,7 +5881,7 @@ async function detectPathIgnore(context) {
         iterSha = ((_a = commit === null || commit === void 0 ? void 0 : commit.parents) === null || _a === void 0 ? void 0 : _a.length) ? (_b = commit.parents[0]) === null || _b === void 0 ? void 0 : _b.sha : null;
         console.log(commit);
         exitIfSuccessfulRunExists(commit, context);
-        if (!isCommitPathIgnored(commit)) {
+        if (!isCommitPathIgnored(commit, context)) {
             return;
         }
     }
@@ -5900,22 +5901,33 @@ function exitIfSuccessfulRunExists(commit, context) {
         exitSuccess({ shouldSkip: true });
     }
 }
-function isCommitPathIgnored(commit) {
+function isCommitPathIgnored(commit, context) {
     if (!commit) {
         return false;
     }
     const paths = commit.files.map((f) => f.filename);
-    console.info(`Match ignored paths with ${paths}`);
+    console.info(`Match ignored paths ${paths} with matchers ${context.pathsIgnore}`);
     for (const path of paths) {
-        if (!isSinglePathIgnored(path)) {
+        if (!isSinglePathIgnored(path, context)) {
             return false;
         }
     }
     console.info(`Detected a commit with only ignored paths: ${paths}`);
     return true;
 }
-function isSinglePathIgnored(path) {
-    return path.toLowerCase().includes("README".toLowerCase());
+function isSinglePathIgnored(path, context) {
+    if (!context.pathsIgnore) {
+        logFatal("pathsIgnore checked too late");
+    }
+    for (const matcher of context.pathsIgnore) {
+        if (matchPath({ path, matcher })) {
+            return true;
+        }
+    }
+    return false;
+}
+function matchPath(args) {
+    return args.path.toLowerCase().includes(args.matcher.toLowerCase());
 }
 async function fetchCommitDetails(sha, context) {
     if (!sha) {
@@ -5952,6 +5964,28 @@ function getBooleanInput(name, defaultValue) {
     }
     else {
         return rawInput.toLowerCase() !== 'true';
+    }
+}
+function getStringArrayInput(name) {
+    const rawInput = core.getInput(name, { required: false });
+    if (!rawInput) {
+        return null;
+    }
+    try {
+        const array = JSON.parse(rawInput);
+        if (!Array.isArray(array)) {
+            logFatal(`Input '${rawInput}' is not a JSON-array`);
+        }
+        array.forEach((e) => {
+            if (typeof e !== "string") {
+                logFatal(`Element '${e}' of input '${rawInput}' is not a string`);
+            }
+        });
+        return array;
+    }
+    catch (e) {
+        core.error(e);
+        logFatal(`Input '${rawInput}' is not a valid JSON`);
     }
 }
 function logFatal(msg) {

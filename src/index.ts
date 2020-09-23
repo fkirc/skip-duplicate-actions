@@ -27,6 +27,7 @@ interface WRunContext {
   currentRun: WorkflowRun;
   otherRuns: WorkflowRun[];
   octokit: any;
+  pathsIgnore: string[] | null;
 }
 
 // interface GCommit {
@@ -106,6 +107,7 @@ async function main() {
     currentRun,
     otherRuns,
     octokit,
+    pathsIgnore: getStringArrayInput("paths_ignore"),
   };
 
   await cancelOutdatedRuns(context);
@@ -188,7 +190,7 @@ async function detectPathIgnore(context: WRunContext) {
     iterSha = commit?.parents?.length ? commit.parents[0]?.sha : null;
     console.log(commit); // TODO: Remove
     exitIfSuccessfulRunExists(commit, context);
-    if (!isCommitPathIgnored(commit)) {
+    if (!isCommitPathIgnored(commit, context)) {
       return;
     }
   }
@@ -210,14 +212,14 @@ function exitIfSuccessfulRunExists(commit: ReposGetCommitResponseData | null, co
   }
 }
 
-function isCommitPathIgnored(commit: ReposGetCommitResponseData | null): boolean {
+function isCommitPathIgnored(commit: ReposGetCommitResponseData | null, context: WRunContext): boolean {
   if (!commit) {
     return false;
   }
   const paths = commit.files.map((f) => f.filename);
-  console.info(`Match ignored paths with ${paths}`); // TODO: Remove
+  console.info(`Match ignored paths ${paths} with matchers ${context.pathsIgnore}`); // TODO: Remove
   for (const path of paths) {
-    if (!isSinglePathIgnored(path)) {
+    if (!isSinglePathIgnored(path, context)) {
       return false;
     }
   }
@@ -225,8 +227,21 @@ function isCommitPathIgnored(commit: ReposGetCommitResponseData | null): boolean
   return true;
 }
 
-function isSinglePathIgnored(path: string): boolean {
-  return path.toLowerCase().includes("README".toLowerCase()); // TODO
+function isSinglePathIgnored(path: string, context: WRunContext): boolean {
+  if (!context.pathsIgnore) {
+    logFatal("pathsIgnore checked too late");
+  }
+  for (const matcher of context.pathsIgnore) {
+    if (matchPath({ path, matcher})) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function matchPath(args: { path: string, matcher: string }): boolean {
+  return args.path.toLowerCase().includes(args.matcher.toLowerCase()); // TODO
+
 }
 
 async function fetchCommitDetails(sha: string | null, context: WRunContext): Promise<ReposGetCommitResponseData | null> {
@@ -268,6 +283,28 @@ function getBooleanInput(name: string, defaultValue: boolean): boolean {
     return rawInput.toLowerCase() !== 'false';
   } else {
     return rawInput.toLowerCase() !== 'true';
+  }
+}
+
+function getStringArrayInput(name: string): string[] | null {
+  const rawInput = core.getInput(name, { required: false });
+  if (!rawInput) {
+    return null;
+  }
+  try {
+    const array = JSON.parse(rawInput);
+    if (!Array.isArray(array)) {
+      logFatal(`Input '${rawInput}' is not a JSON-array`);
+    }
+    array.forEach((e) => {
+      if (typeof e !== "string") {
+        logFatal(`Element '${e}' of input '${rawInput}' is not a string`);
+      }
+    });
+    return array;
+  } catch (e) {
+    core.error(e);
+    logFatal(`Input '${rawInput}' is not a valid JSON`);
   }
 }
 
