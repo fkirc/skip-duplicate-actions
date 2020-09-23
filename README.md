@@ -133,6 +133,7 @@ jobs:
         uses: fkirc/skip-duplicate-actions@master
         with:
           github_token: ${{ github.token }}
+          cancel_others: 'false'
           paths: '["src/**", "dist/**"]'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |

@@ -28,6 +28,7 @@ jobs:
         uses: fkirc/skip-duplicate-actions@master
         with:
           github_token: ${{ github.token }}
+          cancel_others: 'false'
           paths: '["src/**", "dist/**"]'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
@@ -47,7 +48,7 @@ jobs:
         with:
           github_token: ${{ github.token }}
           paths_ignore: '["**/*.yml"]'
-          cancel_others: 'false'
+          cancel_others: 'true'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
           echo "Do stuff..." && sleep 30
