@@ -9999,7 +9999,9 @@ function isCommitPathIgnored(commit, context) {
         return false;
     }
     const changedFiles = commit.files.map((f) => f.filename);
+    core.debug(context.pathsIgnore.toString());
     const notIgnoredPaths = micromatch.not(changedFiles, context.pathsIgnore);
+    core.debug(notIgnoredPaths);
     return notIgnoredPaths.length === 0;
 }
 function isCommitPathSkipped(commit, context) {
