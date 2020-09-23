@@ -47,7 +47,8 @@ jobs:
         uses: ./ # Uses this Action in the root directory
         with:
           github_token: ${{ github.token }}
+          paths: '["src/**"]'
           cancel_others: 'false'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
-          echo "Running slow tests..." && sleep 60
+          echo "Running only if src changed..." && sleep 60
