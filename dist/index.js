@@ -9994,13 +9994,16 @@ function isCommitSkippable(commit, context) {
     }
     return false;
 }
+const globOptions = {
+    dot: true,
+};
 function isCommitPathIgnored(commit, context) {
     if (!context.pathsIgnore.length) {
         return false;
     }
     const changedFiles = commit.files.map((f) => f.filename);
     core.info(context.pathsIgnore.toString());
-    const notIgnoredPaths = micromatch.not(changedFiles, context.pathsIgnore);
+    const notIgnoredPaths = micromatch.not(changedFiles, context.pathsIgnore, globOptions);
     core.info(notIgnoredPaths);
     return notIgnoredPaths.length === 0;
 }
@@ -10009,7 +10012,7 @@ function isCommitPathSkipped(commit, context) {
         return false;
     }
     const changedFiles = commit.files.map((f) => f.filename);
-    const matchExists = micromatch.some(changedFiles, context.paths);
+    const matchExists = micromatch.some(changedFiles, context.paths, globOptions);
     return !matchExists;
 }
 async function fetchCommitDetails(sha, context) {
