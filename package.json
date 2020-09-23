@@ -4,12 +4,13 @@
   "main": "dist/index.js",
   "license": "MIT",
   "scripts": {
-    "build": "ncc build src/index.ts --license licenses.txt"
+    "build": "ncc build src/index.ts"
   },
   "dependencies": {
     "@actions/core": "^1.2.5",
     "@actions/github": "^4.0.0",
-    "@vercel/ncc": "^0.24.1"
+    "@vercel/ncc": "^0.24.1",
+    "micromatch": "^4.0.2"
   },
   "devDependencies": {
     "typescript": "^4.0.3",
