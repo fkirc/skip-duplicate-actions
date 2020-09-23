@@ -110,19 +110,20 @@ async function main() {
     pathsIgnore: getStringArrayInput("paths_ignore"),
   };
 
-  await cancelOutdatedRuns(context);
+  const cancelOthers = getBooleanInput('cancel_others', true);
+  if (cancelOthers) {
+    await cancelOutdatedRuns(context);
+  }
   detectDuplicateRuns(context);
-  await detectPathIgnore(context);
+  if (context.pathsIgnore) {
+    await detectPathIgnore(context);
+  }
 
   core.info("Do not skip execution because we did not find a transferable run");
   exitSuccess({ shouldSkip: false });
 }
 
 async function cancelOutdatedRuns(context: WRunContext) {
-  const cancelOthers = getBooleanInput('cancel_others', true);
-  if (!cancelOthers) {
-    return core.info(`Skip cancellation because 'cancel_others' is set to false`);
-  }
   const currentRun = context.currentRun;
   const cancelVictims = context.otherRuns.filter((run) => {
     if (run.status === 'completed') {
