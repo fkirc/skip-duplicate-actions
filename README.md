@@ -108,7 +108,6 @@ jobs:
       - id: skip_check
         uses: fkirc/skip-duplicate-actions@master
         with:
-          github_token: ${{ github.token }}
           paths_ignore: '["**/README.md", "**/docs/**"]'
 
   main_job:
@@ -132,7 +131,6 @@ jobs:
       - id: skip_check
         uses: fkirc/skip-duplicate-actions@master
         with:
-          github_token: ${{ github.token }}
           cancel_others: 'false'
           paths: '["src/**", "dist/**"]'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
@@ -144,12 +142,10 @@ jobs:
 ### Option 3: Cancellation-only
 
 If you do not care about the skip-features, then you can simply ignore the `should_skip`-output.
-In this case, the integration reduces to three lines:
+In this case, the integration reduces to one line:
 
 ```yml
   - uses: fkirc/skip-duplicate-actions@master
-    with:
-      github_token: ${{ github.token }}
 ```
 
 ## How does it work?
