@@ -49,6 +49,7 @@ jobs:
           github_token: ${{ github.token }}
           paths_ignore: '["**/*.yml"]'
           cancel_others: 'true'
+          skip_concurrent_trigger: 'push'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
           echo "Do stuff..." && sleep 30
