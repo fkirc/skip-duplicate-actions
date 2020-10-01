@@ -11,6 +11,7 @@ type WorkflowRunStatus = 'queued' | 'in_progress' | 'completed'
 type WorkflowRunConclusion = 'success' | 'failure' | 'neutral' | 'cancelled' | 'skipped' | 'timed_out'
 
 interface WorkflowRun {
+  event: WRunTrigger;
   treeHash: string;
   commitHash: string;
   status: WorkflowRunStatus;
@@ -22,14 +23,19 @@ interface WorkflowRun {
   createdAt: string;
 }
 
+type ConcurrentTrigger = "pull_request" | "push";
+type WRunTrigger = ConcurrentTrigger | "workflow_dispatch";
+
 interface WRunContext {
   repoOwner: string;
   repoName: string;
   currentRun: WorkflowRun;
   otherRuns: WorkflowRun[];
+  allRuns: WorkflowRun[];
   octokit: any;
   pathsIgnore: string[];
   paths: string[];
+  skipConcurrentTrigger: ConcurrentTrigger | null;
 }
 
 function parseWorkflowRun(run: ActionsGetWorkflowRunResponseData): WorkflowRun {
@@ -42,6 +48,7 @@ function parseWorkflowRun(run: ActionsGetWorkflowRunResponseData): WorkflowRun {
     logFatal(`Could not find the workflow id of run ${run}`);
   }
   return {
+    event: run.event as WRunTrigger,
     treeHash,
     commitHash: run.head_sha,
     status: run.status as WorkflowRunStatus,
@@ -54,14 +61,16 @@ function parseWorkflowRun(run: ActionsGetWorkflowRunResponseData): WorkflowRun {
   }
 }
 
-function filterWorkflowRuns(response: ActionsListWorkflowRunsResponseData, currentRun: WorkflowRun): WorkflowRun[] {
-  const rawWorkflowRuns = response.workflow_runs.filter((run) => {
+function parseAllRuns(response: ActionsListWorkflowRunsResponseData): WorkflowRun[] {
+  return response.workflow_runs.map((run) => parseWorkflowRun(run));
+}
+
+function parseOlderRuns(response: ActionsListWorkflowRunsResponseData, currentRun: WorkflowRun): WorkflowRun[] {
+  const olderRuns = response.workflow_runs.filter((run) => {
     // Only consider older workflow-runs to prevent some nasty race conditions and edge cases.
     return new Date(run.created_at).getTime() < new Date(currentRun.createdAt).getTime();
   });
-  return rawWorkflowRuns.map((run): WorkflowRun => {
-    return parseWorkflowRun(run);
-  });
+  return olderRuns.map((run) => parseWorkflowRun(run));
 }
 
 async function main() {
@@ -97,15 +106,16 @@ async function main() {
     workflow_id: currentRun.workflowId,
     per_page: 100,
   });
-  const otherRuns = filterWorkflowRuns(data, currentRun);
   const context: WRunContext = {
     repoOwner,
     repoName,
     currentRun,
-    otherRuns,
+    otherRuns: parseOlderRuns(data, currentRun),
+    allRuns: parseAllRuns(data),
     octokit,
     pathsIgnore: getStringArrayInput("paths_ignore"),
     paths: getStringArrayInput("paths"),
+    skipConcurrentTrigger: getSkipConcurrentTrigger(),
   };
 
   const cancelOthers = getBooleanInput('cancel_others', true);
@@ -113,6 +123,9 @@ async function main() {
     await cancelOutdatedRuns(context);
   }
   detectDuplicateRuns(context);
+  if (context.skipConcurrentTrigger) {
+    detectExplicitConcurrentTrigger(context);
+  }
   if (context.paths.length >= 1 || context.pathsIgnore.length >= 1) {
     await backtracePathSkipping(context);
   }
@@ -153,7 +166,7 @@ async function cancelWorkflowRun(run: WorkflowRun, context: WRunContext) {
 function detectDuplicateRuns(context: WRunContext) {
   const duplicateRuns = context.otherRuns.filter((run) => run.treeHash === context.currentRun.treeHash);
 
-  if (github.context.eventName === 'workflow_dispatch') {
+  if (context.currentRun.event === 'workflow_dispatch') {
     core.info("Do not skip execution because the workflow was triggered with workflow_dispatch");
     exitSuccess({ shouldSkip: false });
   }
@@ -174,7 +187,7 @@ function detectDuplicateRuns(context: WRunContext) {
     }
     return true;
   });
-  if (concurrentDuplicate) {
+  if (concurrentDuplicate && !context.skipConcurrentTrigger) {
     core.info(`Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`);
     exitSuccess({ shouldSkip: true });
   }
@@ -183,6 +196,26 @@ function detectDuplicateRuns(context: WRunContext) {
   });
   if (failedDuplicate) {
     logFatal(`Trigger a failure because ${failedDuplicate.html_url} has already failed with the exact same files. You can use 'workflow_dispatch' to manually enforce a re-run.`);
+  }
+}
+
+function detectExplicitConcurrentTrigger(context: WRunContext) {
+  const duplicateTriggerRun = context.allRuns.find((run) => {
+    if (run.treeHash !== context.currentRun.treeHash) {
+      return false;
+    }
+    if (run.runId === context.currentRun.runId) {
+      return false;
+    }
+    return run.event !== context.skipConcurrentTrigger;
+  });
+  if (duplicateTriggerRun) {
+    if (context.currentRun.event === context.skipConcurrentTrigger) {
+      core.info(`Skip execution because this is a '${context.currentRun.event}'-trigger and the exact same files are concurrently checked in ${duplicateTriggerRun.html_url}`);
+      exitSuccess({ shouldSkip: true });
+    } else {
+      core.info(`Concurrent skipping is not allowed because this is a '${context.currentRun.event}'-trigger and skip_concurrent_trigger is set to '${context.skipConcurrentTrigger}'`);
+    }
   }
 }
 
@@ -278,6 +311,17 @@ async function fetchCommitDetails(sha: string | null, context: WRunContext): Pro
 function exitSuccess(args: { shouldSkip: boolean }): never {
   core.setOutput("should_skip", args.shouldSkip);
   return process.exit(0) as never;
+}
+
+function getSkipConcurrentTrigger(): ConcurrentTrigger | null {
+  const rawTrigger = core.getInput("skip_concurrent_trigger", { required: false });
+  if (!rawTrigger || !rawTrigger.length) {
+    return null;
+  }
+  if (rawTrigger === "pull_request" || rawTrigger === "push") {
+    return rawTrigger;
+  }
+  logFatal(`Input '${rawTrigger}' is not a known concurrent trigger`);
 }
 
 function getBooleanInput(name: string, defaultValue: boolean): boolean {

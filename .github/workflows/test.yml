@@ -47,8 +47,9 @@ jobs:
         uses: ./ # Uses this Action in the root directory
         with:
           github_token: ${{ github.token }}
-          paths_ignore: '["**/*.yml"]'
+          paths_ignore: '["**/*.md"]'
           cancel_others: 'true'
+          skip_concurrent_trigger: 'push'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
           echo "Do stuff..." && sleep 30
