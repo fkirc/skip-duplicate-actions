@@ -166,6 +166,7 @@ function detectDuplicateRuns(context: WRunContext) {
   }
   const concurrentDuplicate = duplicateRuns.find((run) => {
     if (context.currentRun.branch && context.currentRun.branch !== run.branch) {
+      core.info(`The exact same files are concurrently checked on a different branch in ${run.html_url}`);
       return false; // Do not perform "cross-branch-skipping" because this would undermine GitHub's merge-safety-checks.
     }
     return run.status !== 'completed';

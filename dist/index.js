@@ -10006,6 +10006,7 @@ function detectDuplicateRuns(context) {
     }
     const concurrentDuplicate = duplicateRuns.find((run) => {
         if (context.currentRun.branch && context.currentRun.branch !== run.branch) {
+            core.info(`The exact same files are concurrently checked on a different branch in ${run.html_url}`);
             return false;
         }
         return run.status !== 'completed';
