@@ -9891,6 +9891,7 @@ function parseWorkflowRun(run) {
         logFatal(`Could not find the workflow id of run ${run}`);
     }
     return {
+        event: run.event,
         treeHash,
         commitHash: run.head_sha,
         status: run.status,
@@ -9902,13 +9903,14 @@ function parseWorkflowRun(run) {
         createdAt: run.created_at,
     };
 }
-function filterWorkflowRuns(response, currentRun) {
-    const rawWorkflowRuns = response.workflow_runs.filter((run) => {
+function parseAllRuns(response) {
+    return response.workflow_runs.map(run => parseWorkflowRun(run));
+}
+function parseOlderRuns(response, currentRun) {
+    const olderRuns = response.workflow_runs.filter((run) => {
         return new Date(run.created_at).getTime() < new Date(currentRun.createdAt).getTime();
     });
-    return rawWorkflowRuns.map((run) => {
-        return parseWorkflowRun(run);
-    });
+    return olderRuns.map(run => parseWorkflowRun(run));
 }
 async function main() {
     const token = core.getInput('github_token', { required: true });
@@ -9941,21 +9943,25 @@ async function main() {
         workflow_id: currentRun.workflowId,
         per_page: 100,
     });
-    const otherRuns = filterWorkflowRuns(data, currentRun);
     const context = {
         repoOwner,
         repoName,
         currentRun,
-        otherRuns,
+        otherRuns: parseOlderRuns(data, currentRun),
+        allRuns: parseAllRuns(data),
         octokit,
         pathsIgnore: getStringArrayInput("paths_ignore"),
         paths: getStringArrayInput("paths"),
+        skipConcurrentTrigger: getSkipConcurrentTrigger(),
     };
     const cancelOthers = getBooleanInput('cancel_others', true);
     if (cancelOthers) {
         await cancelOutdatedRuns(context);
     }
     detectDuplicateRuns(context);
+    if (context.skipConcurrentTrigger) {
+        detectExplicitConcurrentTrigger(context);
+    }
     if (context.paths.length >= 1 || context.pathsIgnore.length >= 1) {
         await backtracePathSkipping(context);
     }
@@ -9993,7 +9999,7 @@ async function cancelWorkflowRun(run, context) {
 }
 function detectDuplicateRuns(context) {
     const duplicateRuns = context.otherRuns.filter((run) => run.treeHash === context.currentRun.treeHash);
-    if (github.context.eventName === 'workflow_dispatch') {
+    if (context.currentRun.event === 'workflow_dispatch') {
         core.info("Do not skip execution because the workflow was triggered with workflow_dispatch");
         exitSuccess({ shouldSkip: false });
     }
@@ -10014,7 +10020,7 @@ function detectDuplicateRuns(context) {
         }
         return true;
     });
-    if (concurrentDuplicate) {
+    if (concurrentDuplicate && !context.skipConcurrentTrigger) {
         core.info(`Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`);
         exitSuccess({ shouldSkip: true });
     }
@@ -10023,6 +10029,26 @@ function detectDuplicateRuns(context) {
     });
     if (failedDuplicate) {
         logFatal(`Trigger a failure because ${failedDuplicate.html_url} has already failed with the exact same files. You can use 'workflow_dispatch' to manually enforce a re-run.`);
+    }
+}
+function detectExplicitConcurrentTrigger(context) {
+    const duplicateTriggerRun = context.allRuns.find((run) => {
+        if (run.treeHash !== context.currentRun.treeHash) {
+            return false;
+        }
+        if (run.runId === context.currentRun.runId) {
+            return false;
+        }
+        return run.event !== context.skipConcurrentTrigger;
+    });
+    if (duplicateTriggerRun) {
+        if (context.currentRun.event === context.skipConcurrentTrigger) {
+            core.info(`Skip execution because this is a '${context.currentRun.event}'-trigger and the exact same files are concurrently checked in ${duplicateTriggerRun.html_url}`);
+            exitSuccess({ shouldSkip: true });
+        }
+        else {
+            core.info(`Concurrent skipping is not allowed because this is a '${context.currentRun.event}'-trigger and skip_concurrent_trigger is set to '${context.skipConcurrentTrigger}'`);
+        }
     }
 }
 async function backtracePathSkipping(context) {
@@ -10106,6 +10132,16 @@ async function fetchCommitDetails(sha, context) {
 function exitSuccess(args) {
     core.setOutput("should_skip", args.shouldSkip);
     return process.exit(0);
+}
+function getSkipConcurrentTrigger() {
+    const rawTrigger = core.getInput("skip_concurrent_trigger", { required: false });
+    if (!rawTrigger) {
+        return null;
+    }
+    if (rawTrigger === "pull_request" || rawTrigger === "push") {
+        return rawTrigger;
+    }
+    logFatal(`Input '${rawTrigger}' is not a known concurrent trigger`);
 }
 function getBooleanInput(name, defaultValue) {
     const rawInput = core.getInput(name, { required: false });
