@@ -10005,6 +10005,9 @@ function detectDuplicateRuns(context) {
         exitSuccess({ shouldSkip: true });
     }
     const concurrentDuplicate = duplicateRuns.find((run) => {
+        if (context.currentRun.branch && context.currentRun.branch !== run.branch) {
+            return false;
+        }
         return run.status !== 'completed';
     });
     if (concurrentDuplicate) {
