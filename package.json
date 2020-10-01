@@ -18,7 +18,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "npm run build && git diff --exit-code dist/"
+      "pre-commit": "yarn run build && git diff --exit-code dist/"
     }
   }
 }
