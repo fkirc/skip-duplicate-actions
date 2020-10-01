@@ -165,11 +165,14 @@ function detectDuplicateRuns(context: WRunContext) {
     exitSuccess({ shouldSkip: true });
   }
   const concurrentDuplicate = duplicateRuns.find((run) => {
+    if (run.status === 'completed') {
+      return false;
+    }
     if (context.currentRun.branch && context.currentRun.branch !== run.branch) {
       core.info(`The exact same files are concurrently checked on a different branch in ${run.html_url}`);
       return false; // Do not perform "cross-branch-skipping" because this would undermine GitHub's merge-safety-checks.
     }
-    return run.status !== 'completed';
+    return true;
   });
   if (concurrentDuplicate) {
     core.info(`Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`);
