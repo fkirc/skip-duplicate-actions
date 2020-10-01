@@ -315,7 +315,7 @@ function exitSuccess(args: { shouldSkip: boolean }): never {
 
 function getSkipConcurrentTrigger(): ConcurrentTrigger | null {
   const rawTrigger = core.getInput("skip_concurrent_trigger", { required: false });
-  if (!rawTrigger) {
+  if (!rawTrigger || !rawTrigger.length) {
     return null;
   }
   if (rawTrigger === "pull_request" || rawTrigger === "push") {

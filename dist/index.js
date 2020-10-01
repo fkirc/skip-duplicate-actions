@@ -10135,7 +10135,7 @@ function exitSuccess(args) {
 }
 function getSkipConcurrentTrigger() {
     const rawTrigger = core.getInput("skip_concurrent_trigger", { required: false });
-    if (!rawTrigger) {
+    if (!rawTrigger || !rawTrigger.length) {
         return null;
     }
     if (rawTrigger === "pull_request" || rawTrigger === "push") {
