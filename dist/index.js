@@ -9904,13 +9904,13 @@ function parseWorkflowRun(run) {
     };
 }
 function parseAllRuns(response) {
-    return response.workflow_runs.map(run => parseWorkflowRun(run));
+    return response.workflow_runs.map((run) => parseWorkflowRun(run));
 }
 function parseOlderRuns(response, currentRun) {
     const olderRuns = response.workflow_runs.filter((run) => {
         return new Date(run.created_at).getTime() < new Date(currentRun.createdAt).getTime();
     });
-    return olderRuns.map(run => parseWorkflowRun(run));
+    return olderRuns.map((run) => parseWorkflowRun(run));
 }
 async function main() {
     const token = core.getInput('github_token', { required: true });

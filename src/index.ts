@@ -62,7 +62,7 @@ function parseWorkflowRun(run: ActionsGetWorkflowRunResponseData): WorkflowRun {
 }
 
 function parseAllRuns(response: ActionsListWorkflowRunsResponseData): WorkflowRun[] {
-  return response.workflow_runs.map(run => parseWorkflowRun(run));
+  return response.workflow_runs.map((run) => parseWorkflowRun(run));
 }
 
 function parseOlderRuns(response: ActionsListWorkflowRunsResponseData, currentRun: WorkflowRun): WorkflowRun[] {
@@ -70,7 +70,7 @@ function parseOlderRuns(response: ActionsListWorkflowRunsResponseData, currentRu
     // Only consider older workflow-runs to prevent some nasty race conditions and edge cases.
     return new Date(run.created_at).getTime() < new Date(currentRun.createdAt).getTime();
   });
-  return olderRuns.map(run => parseWorkflowRun(run));
+  return olderRuns.map((run) => parseWorkflowRun(run));
 }
 
 async function main() {
