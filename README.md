@@ -81,6 +81,10 @@ Default `[]`.
 
 If true, then workflow-runs from outdated commits will be cancelled. Default `true`.
 
+### `skip_concurrent_trigger`
+
+Set this to "push" or "pull_request" if you only want to skip a specific kind of triggers. Only affects concurrent workflow-runs.
+
 ## Outputs
 
 ### `should_skip`
@@ -155,9 +159,7 @@ In this case, the integration reduces to three lines:
 ## How does it work?
 
 `skip-duplicate-actions` uses the [Workflow Runs API](https://docs.github.com/en/rest/reference/actions#workflow-runs) to query workflow-runs.
-
-Firstly, `skip-duplicate-actions` will only look at workflow-runs that belong to the same workflow as the current workflow-run.
-Secondly, `skip-duplicate-actions` will only look at _older_ workflow-runs in order to guard against race conditions and edge cases.
+`skip-duplicate-actions` will only look at workflow-runs that belong to the same workflow as the current workflow-run.
 After querying such workflow-runs, it will compare them with the current workflow-run as follows:
 
 - If there exists a workflow-runs with the same tree hash, then we have identified a duplicate workflow-run.
