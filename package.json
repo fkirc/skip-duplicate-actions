@@ -13,12 +13,6 @@
     "micromatch": "^4.0.2"
   },
   "devDependencies": {
-    "typescript": "^4.0.3",
-    "husky": "^4.3.0"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "yarn run build && git diff --exit-code dist/"
-    }
+    "typescript": "^4.0.3"
   }
 }
