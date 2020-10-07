@@ -191,12 +191,6 @@ function detectDuplicateRuns(context: WRunContext) {
     core.info(`Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`);
     exitSuccess({ shouldSkip: true });
   }
-  const failedDuplicate = duplicateRuns.find((run) => {
-    return run.status === 'completed' && run.conclusion === 'failure';
-  });
-  if (failedDuplicate) {
-    logFatal(`Trigger a failure because ${failedDuplicate.html_url} has already failed with the exact same files. You can use 'workflow_dispatch' to manually enforce a re-run.`);
-  }
 }
 
 function detectExplicitConcurrentTrigger(context: WRunContext) {
