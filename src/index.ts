@@ -94,31 +94,31 @@ async function main() {
 
   let context: WRunContext;
   try {
-    const octokit = github.getOctokit(token);
-    const { data: current_run } = await octokit.actions.getWorkflowRun({
-      owner: repoOwner,
-      repo: repoName,
-      run_id: runId,
-    });
-    const currentRun = parseWorkflowRun(current_run);
+  const octokit = github.getOctokit(token);
+  const { data: current_run } = await octokit.actions.getWorkflowRun({
+    owner: repoOwner,
+    repo: repoName,
+    run_id: runId,
+  });
+  const currentRun = parseWorkflowRun(current_run);
 
-    const { data } = await octokit.actions.listWorkflowRuns({
-      owner: repoOwner,
-      repo: repoName,
-      workflow_id: currentRun.workflowId,
-      per_page: 100,
-    });
-    context = {
-      repoOwner,
-      repoName,
-      currentRun,
-      otherRuns: parseOlderRuns(data, currentRun),
-      allRuns: parseAllRuns(data),
-      octokit,
-      pathsIgnore: getStringArrayInput("paths_ignore"),
-      paths: getStringArrayInput("paths"),
-      skipConcurrentTrigger: getSkipConcurrentTrigger(),
-    };
+  const { data } = await octokit.actions.listWorkflowRuns({
+    owner: repoOwner,
+    repo: repoName,
+    workflow_id: currentRun.workflowId,
+    per_page: 100,
+  });
+  context = {
+    repoOwner,
+    repoName,
+    currentRun,
+    otherRuns: parseOlderRuns(data, currentRun),
+    allRuns: parseAllRuns(data),
+    octokit,
+    pathsIgnore: getStringArrayInput("paths_ignore"),
+    paths: getStringArrayInput("paths"),
+    skipConcurrentTrigger: getSkipConcurrentTrigger(),
+  };
   } catch (e) {
     core.warning(e);
     core.warning(`Failed to fetch the required workflow information`);
