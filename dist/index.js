@@ -9930,30 +9930,38 @@ async function main() {
     if (!runId) {
         logFatal("Did not find runId");
     }
-    const octokit = github.getOctokit(token);
-    const { data: current_run } = await octokit.actions.getWorkflowRun({
-        owner: repoOwner,
-        repo: repoName,
-        run_id: runId,
-    });
-    const currentRun = parseWorkflowRun(current_run);
-    const { data } = await octokit.actions.listWorkflowRuns({
-        owner: repoOwner,
-        repo: repoName,
-        workflow_id: currentRun.workflowId,
-        per_page: 100,
-    });
-    const context = {
-        repoOwner,
-        repoName,
-        currentRun,
-        otherRuns: parseOlderRuns(data, currentRun),
-        allRuns: parseAllRuns(data),
-        octokit,
-        pathsIgnore: getStringArrayInput("paths_ignore"),
-        paths: getStringArrayInput("paths"),
-        skipConcurrentTrigger: getSkipConcurrentTrigger(),
-    };
+    let context;
+    try {
+        const octokit = github.getOctokit(token);
+        const { data: current_run } = await octokit.actions.getWorkflowRun({
+            owner: repoOwner,
+            repo: repoName,
+            run_id: runId,
+        });
+        const currentRun = parseWorkflowRun(current_run);
+        const { data } = await octokit.actions.listWorkflowRuns({
+            owner: repoOwner,
+            repo: repoName,
+            workflow_id: currentRun.workflowId,
+            per_page: 100,
+        });
+        context = {
+            repoOwner,
+            repoName,
+            currentRun,
+            otherRuns: parseOlderRuns(data, currentRun),
+            allRuns: parseAllRuns(data),
+            octokit,
+            pathsIgnore: getStringArrayInput("paths_ignore"),
+            paths: getStringArrayInput("paths"),
+            skipConcurrentTrigger: getSkipConcurrentTrigger(),
+        };
+    }
+    catch (e) {
+        core.warning(e);
+        core.warning(`Failed to fetch the required workflow information`);
+        exitSuccess({ shouldSkip: false });
+    }
     const cancelOthers = getBooleanInput('cancel_others', true);
     if (cancelOthers) {
         await cancelOutdatedRuns(context);

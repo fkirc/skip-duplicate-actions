@@ -92,6 +92,8 @@ async function main() {
     logFatal("Did not find runId");
   }
 
+  let context: WRunContext;
+  try {
   const octokit = github.getOctokit(token);
   const { data: current_run } = await octokit.actions.getWorkflowRun({
     owner: repoOwner,
@@ -106,7 +108,7 @@ async function main() {
     workflow_id: currentRun.workflowId,
     per_page: 100,
   });
-  const context: WRunContext = {
+  context = {
     repoOwner,
     repoName,
     currentRun,
@@ -117,6 +119,11 @@ async function main() {
     paths: getStringArrayInput("paths"),
     skipConcurrentTrigger: getSkipConcurrentTrigger(),
   };
+  } catch (e) {
+    core.warning(e);
+    core.warning(`Failed to fetch the required workflow information`);
+    exitSuccess({shouldSkip: false});
+  }
 
   const cancelOthers = getBooleanInput('cancel_others', true);
   if (cancelOthers) {
