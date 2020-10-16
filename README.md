@@ -104,6 +104,7 @@ Although this example looks like a lot of code, there are only two additional li
 ```yml
 jobs:
   pre_job:
+    continue-on-error: true
     runs-on: ubuntu-latest
     # Map a step output to a job output
     outputs:
