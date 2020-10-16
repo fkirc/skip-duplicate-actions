@@ -121,7 +121,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo "Running slow tests..." && sleep 30
-
 ```
 
 ### Option 2: Skip individual steps
