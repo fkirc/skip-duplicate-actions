@@ -117,10 +117,11 @@ jobs:
 
   main_job:
     needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip == 'false' }}
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - run: echo "Running slow tests..." && sleep 30
+
 ```
 
 ### Option 2: Skip individual steps
