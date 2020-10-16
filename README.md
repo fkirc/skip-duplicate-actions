@@ -104,6 +104,7 @@ Although this example looks like a lot of code, there are only two additional li
 ```yml
 jobs:
   pre_job:
+    continue-on-error: true
     runs-on: ubuntu-latest
     # Map a step output to a job output
     outputs:
@@ -117,7 +118,7 @@ jobs:
 
   main_job:
     needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip == 'false' }}
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - run: echo "Running slow tests..." && sleep 30
@@ -139,7 +140,7 @@ jobs:
           github_token: ${{ github.token }}
           cancel_others: 'false'
           paths: '["src/**", "dist/**"]'
-      - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
+      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
         run: |
           echo "Run only if src/ or dist/ changed..." && sleep 30
           echo "Do other stuff..."
