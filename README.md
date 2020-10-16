@@ -140,7 +140,7 @@ jobs:
           github_token: ${{ github.token }}
           cancel_others: 'false'
           paths: '["src/**", "dist/**"]'
-      - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
+      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
         run: |
           echo "Run only if src/ or dist/ changed..." && sleep 30
           echo "Do other stuff..."
