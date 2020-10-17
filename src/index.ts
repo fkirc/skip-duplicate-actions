@@ -207,9 +207,6 @@ function detectExplicitConcurrentTrigger(context: WRunContext) {
     if (run.runId === context.currentRun.runId) {
       return false;
     }
-    if (context.doNotSkip.includes(run.event)) {
-      return false;
-    }
     return true;
   });
   if (duplicateTriggerRun) {
