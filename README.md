@@ -19,7 +19,7 @@ For example, duplicate workflow-runs can happen if a workflow runs on a feature 
 - **Full traceability:** After clean merges, you will see a message like `Skip execution because the exact same files have been successfully checked in <previous_run_URL>`.
 - **Skip concurrent workflow-runs:** If the same workflow is unnecessarily triggered twice, then one of the workflow-runs will be skipped.
   For example, this can happen when you push a tag right after pushing a commit.
-- **Respect manual triggers:** If you manually trigger a workflow with `workflow_dispatch`, then the workflow-run will not be skipped.
+- **Fully configurable:** By default, manual triggers and cron will never be skipped.
 - **Flexible Git usage:** `skip-duplicate-actions` does not care whether you use fast-forward-merges, rebase-merges or squash-merges.
   However, if a merge yields a result that is different from the source branch, then the resulting workflow-run will _not_ be skipped.
   This is commonly the case if you merge "outdated branches".
@@ -81,9 +81,9 @@ Default `[]`.
 
 If true, then workflow-runs from outdated commits will be cancelled. Default `true`.
 
-### `skip_concurrent_trigger`
+### `do_not_skip`
 
-Set this to "push" or "pull_request" if you only want to skip a specific kind of triggers. Only affects concurrent workflow-runs.
+A JSON-array with triggers that should never be skipped. Default `'["workflow_dispatch", "cron"]'`.
 
 ## Outputs
 
