@@ -23,8 +23,7 @@ interface WorkflowRun {
   createdAt: string;
 }
 
-type ConcurrentTrigger = "pull_request" | "push";
-type WRunTrigger = ConcurrentTrigger | "workflow_dispatch";
+type WRunTrigger =  "pull_request" | "push" | "workflow_dispatch" | "cron";
 
 interface WRunContext {
   repoOwner: string;
@@ -35,7 +34,8 @@ interface WRunContext {
   octokit: any;
   pathsIgnore: string[];
   paths: string[];
-  skipConcurrentTrigger: ConcurrentTrigger | null;
+  doNotSkip: WRunTrigger[];
+  explicitConcurrentTrigger: boolean;
 }
 
 function parseWorkflowRun(run: ActionsGetWorkflowRunResponseData): WorkflowRun {
@@ -108,6 +108,7 @@ async function main() {
     workflow_id: currentRun.workflowId,
     per_page: 100,
   });
+  const doNotSkip = getStringArrayInput("do_not_skip") as WRunTrigger[];
   context = {
     repoOwner,
     repoName,
@@ -117,7 +118,8 @@ async function main() {
     octokit,
     pathsIgnore: getStringArrayInput("paths_ignore"),
     paths: getStringArrayInput("paths"),
-    skipConcurrentTrigger: getSkipConcurrentTrigger(),
+    doNotSkip,
+    explicitConcurrentTrigger: doNotSkip.includes("pull_request") || doNotSkip.includes("push"),
   };
   } catch (e) {
     core.warning(e);
@@ -130,7 +132,7 @@ async function main() {
     await cancelOutdatedRuns(context);
   }
   detectDuplicateRuns(context);
-  if (context.skipConcurrentTrigger) {
+  if (context.explicitConcurrentTrigger) {
     detectExplicitConcurrentTrigger(context);
   }
   if (context.paths.length >= 1 || context.pathsIgnore.length >= 1) {
@@ -173,8 +175,8 @@ async function cancelWorkflowRun(run: WorkflowRun, context: WRunContext) {
 function detectDuplicateRuns(context: WRunContext) {
   const duplicateRuns = context.otherRuns.filter((run) => run.treeHash === context.currentRun.treeHash);
 
-  if (context.currentRun.event === 'workflow_dispatch') {
-    core.info("Do not skip execution because the workflow was triggered with workflow_dispatch");
+  if (context.doNotSkip.includes(context.currentRun.event)) {
+    core.info(`Do not skip execution because the workflow was triggered with '${context.currentRun.event}'`);
     exitSuccess({ shouldSkip: false });
   }
   const successfulDuplicate = duplicateRuns.find((run) => {
@@ -194,7 +196,7 @@ function detectDuplicateRuns(context: WRunContext) {
     }
     return true;
   });
-  if (concurrentDuplicate && !context.skipConcurrentTrigger) {
+  if (concurrentDuplicate && !context.explicitConcurrentTrigger) {
     core.info(`Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`);
     exitSuccess({ shouldSkip: true });
   }
@@ -208,15 +210,14 @@ function detectExplicitConcurrentTrigger(context: WRunContext) {
     if (run.runId === context.currentRun.runId) {
       return false;
     }
-    return run.event !== context.skipConcurrentTrigger;
+    if (context.doNotSkip.includes(run.event)) {
+      return false;
+    }
+    return true;
   });
   if (duplicateTriggerRun) {
-    if (context.currentRun.event === context.skipConcurrentTrigger) {
-      core.info(`Skip execution because this is a '${context.currentRun.event}'-trigger and the exact same files are concurrently checked in ${duplicateTriggerRun.html_url}`);
-      exitSuccess({ shouldSkip: true });
-    } else {
-      core.info(`Concurrent skipping is not allowed because this is a '${context.currentRun.event}'-trigger and skip_concurrent_trigger is set to '${context.skipConcurrentTrigger}'`);
-    }
+    core.info(`Skip execution because this is a '${context.currentRun.event}'-trigger and the exact same files are concurrently checked in ${duplicateTriggerRun.html_url}`);
+    exitSuccess({ shouldSkip: true });
   }
 }
 
@@ -312,17 +313,6 @@ async function fetchCommitDetails(sha: string | null, context: WRunContext): Pro
 function exitSuccess(args: { shouldSkip: boolean }): never {
   core.setOutput("should_skip", args.shouldSkip);
   return process.exit(0) as never;
-}
-
-function getSkipConcurrentTrigger(): ConcurrentTrigger | null {
-  const rawTrigger = core.getInput("skip_concurrent_trigger", { required: false });
-  if (!rawTrigger || !rawTrigger.length) {
-    return null;
-  }
-  if (rawTrigger === "pull_request" || rawTrigger === "push") {
-    return rawTrigger;
-  }
-  logFatal(`Input '${rawTrigger}' is not a known concurrent trigger`);
 }
 
 function getBooleanInput(name: string, defaultValue: boolean): boolean {
