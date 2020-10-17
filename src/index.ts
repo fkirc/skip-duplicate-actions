@@ -35,7 +35,6 @@ interface WRunContext {
   pathsIgnore: string[];
   paths: string[];
   doNotSkip: WRunTrigger[];
-  explicitConcurrentTrigger: boolean;
 }
 
 function parseWorkflowRun(run: ActionsGetWorkflowRunResponseData): WorkflowRun {
@@ -108,7 +107,6 @@ async function main() {
     workflow_id: currentRun.workflowId,
     per_page: 100,
   });
-  const doNotSkip = getStringArrayInput("do_not_skip") as WRunTrigger[];
   context = {
     repoOwner,
     repoName,
@@ -118,8 +116,7 @@ async function main() {
     octokit,
     pathsIgnore: getStringArrayInput("paths_ignore"),
     paths: getStringArrayInput("paths"),
-    doNotSkip,
-    explicitConcurrentTrigger: doNotSkip.includes("pull_request") || doNotSkip.includes("push"),
+    doNotSkip: getStringArrayInput("do_not_skip") as WRunTrigger[],
   };
   } catch (e) {
     core.warning(e);
@@ -132,7 +129,7 @@ async function main() {
     await cancelOutdatedRuns(context);
   }
   detectDuplicateRuns(context);
-  if (context.explicitConcurrentTrigger) {
+  if (context.doNotSkip.includes("pull_request") || context.doNotSkip.includes("push")) {
     detectExplicitConcurrentTrigger(context);
   }
   if (context.paths.length >= 1 || context.pathsIgnore.length >= 1) {
@@ -196,7 +193,7 @@ function detectDuplicateRuns(context: WRunContext) {
     }
     return true;
   });
-  if (concurrentDuplicate && !context.explicitConcurrentTrigger) {
+  if (concurrentDuplicate) {
     core.info(`Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`);
     exitSuccess({ shouldSkip: true });
   }
