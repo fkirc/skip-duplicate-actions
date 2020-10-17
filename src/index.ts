@@ -128,6 +128,10 @@ async function main() {
   if (cancelOthers) {
     await cancelOutdatedRuns(context);
   }
+  if (context.doNotSkip.includes(context.currentRun.event)) {
+    core.info(`Do not skip execution because the workflow was triggered with '${context.currentRun.event}'`);
+    exitSuccess({ shouldSkip: false });
+  }
   detectDuplicateRuns(context);
   if (context.doNotSkip.includes("pull_request") || context.doNotSkip.includes("push")) {
     detectExplicitConcurrentTrigger(context);
@@ -172,10 +176,6 @@ async function cancelWorkflowRun(run: WorkflowRun, context: WRunContext) {
 function detectDuplicateRuns(context: WRunContext) {
   const duplicateRuns = context.otherRuns.filter((run) => run.treeHash === context.currentRun.treeHash);
 
-  if (context.doNotSkip.includes(context.currentRun.event)) {
-    core.info(`Do not skip execution because the workflow was triggered with '${context.currentRun.event}'`);
-    exitSuccess({ shouldSkip: false });
-  }
   const successfulDuplicate = duplicateRuns.find((run) => {
     return run.status === 'completed' && run.conclusion === 'success';
   });
