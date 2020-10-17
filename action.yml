@@ -20,9 +20,10 @@ inputs:
     description: 'If true, then workflow-runs from outdated commits will be cancelled'
     required: false
     default: 'true'
-  skip_concurrent_trigger:
-    description: 'Set this to "push" or "pull_request" if you only want to skip a specific kind of triggers. Only affects concurrent workflow-runs.'
+  do_not_skip:
+    description: 'A JSON-array with triggers that should never be skipped'
     required: false
+    default: '["workflow_dispatch", "schedule"]'
 
 outputs:
   should_skip:

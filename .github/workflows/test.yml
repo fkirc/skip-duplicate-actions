@@ -1,4 +1,9 @@
-on: [push, workflow_dispatch, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron:  '0 12 18 * *'
 
 jobs:
   pre_job:
@@ -50,7 +55,7 @@ jobs:
           github_token: ${{ github.token }}
           paths_ignore: '["**/*.md"]'
           cancel_others: 'true'
-          skip_concurrent_trigger: 'push'
+          do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
           echo "Do stuff..." && sleep 30
