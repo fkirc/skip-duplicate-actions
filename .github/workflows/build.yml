@@ -3,7 +3,7 @@ on:
   pull_request:
   workflow_dispatch:
   schedule:
-    - cron:  '0 12 15 * *'
+    - cron:  '0 12 18 * *'
 
 jobs:
   pre_job:
