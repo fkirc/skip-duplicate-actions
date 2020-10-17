@@ -83,7 +83,7 @@ If true, then workflow-runs from outdated commits will be cancelled. Default `tr
 
 ### `do_not_skip`
 
-A JSON-array with triggers that should never be skipped. Default `'["workflow_dispatch", "cron"]'`.
+A JSON-array with triggers that should never be skipped. Default `'["workflow_dispatch", "schedule"]'`.
 
 ## Outputs
 

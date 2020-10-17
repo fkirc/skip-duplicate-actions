@@ -23,7 +23,7 @@ interface WorkflowRun {
   createdAt: string;
 }
 
-type WRunTrigger =  "pull_request" | "push" | "workflow_dispatch" | "cron";
+type WRunTrigger =  "pull_request" | "push" | "workflow_dispatch" | "schedule";
 
 interface WRunContext {
   repoOwner: string;

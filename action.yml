@@ -23,7 +23,7 @@ inputs:
   do_not_skip:
     description: 'A JSON-array with triggers that should never be skipped'
     required: false
-    default: '["workflow_dispatch", "cron"]'
+    default: '["workflow_dispatch", "schedule"]'
 
 outputs:
   should_skip:
