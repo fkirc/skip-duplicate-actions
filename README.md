@@ -85,6 +85,10 @@ If true, then workflow-runs from outdated commits will be cancelled. Default `tr
 
 A JSON-array with triggers that should never be skipped. Default `'["workflow_dispatch", "schedule"]'`.
 
+### `concurrent_skipping`
+
+If false, unfinished workflow-runs will be safely ignored. default `true`.
+
 ## Outputs
 
 ### `should_skip`

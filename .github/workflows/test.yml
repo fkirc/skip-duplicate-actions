@@ -56,6 +56,7 @@ jobs:
           paths_ignore: '["**/*.md"]'
           cancel_others: 'true'
           do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
+          concurrent_skipping: 'true'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
           echo "Do stuff..." && sleep 30
