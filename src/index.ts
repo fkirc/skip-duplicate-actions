@@ -35,6 +35,7 @@ interface WRunContext {
   pathsIgnore: string[];
   paths: string[];
   doNotSkip: WRunTrigger[];
+  concurrentSkipping: boolean;
 }
 
 function parseWorkflowRun(run: ActionsGetWorkflowRunResponseData): WorkflowRun {
@@ -117,6 +118,7 @@ async function main() {
     pathsIgnore: getStringArrayInput("paths_ignore"),
     paths: getStringArrayInput("paths"),
     doNotSkip: getStringArrayInput("do_not_skip") as WRunTrigger[],
+    concurrentSkipping: getBooleanInput("concurrent_skipping", true),
   };
   } catch (e) {
     core.warning(e);
@@ -193,13 +195,16 @@ function detectDuplicateRuns(context: WRunContext) {
     }
     return true;
   });
-  if (concurrentDuplicate) {
+  if (concurrentDuplicate && context.concurrentSkipping) {
     core.info(`Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`);
     exitSuccess({ shouldSkip: true });
   }
 }
 
 function detectExplicitConcurrentTrigger(context: WRunContext) {
+  if (!context.concurrentSkipping) {
+    return;
+  }
   const duplicateTriggerRun = context.allRuns.find((run) => {
     if (run.treeHash !== context.currentRun.treeHash) {
       return false;

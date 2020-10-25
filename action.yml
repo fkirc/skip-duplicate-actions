@@ -24,6 +24,10 @@ inputs:
     description: 'A JSON-array with triggers that should never be skipped'
     required: false
     default: '["workflow_dispatch", "schedule"]'
+  concurrent_skipping:
+    description: 'If false, unfinished workflow-runs will be safely ignored'
+    required: false
+    default: 'true'
 
 outputs:
   should_skip:
