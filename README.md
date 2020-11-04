@@ -161,6 +161,11 @@ In this case, the integration reduces to three lines:
       github_token: ${{ github.token }}
 ```
 
+## Related Projects
+
+GitHub is not the only thing that should be optimized.
+Try `attranslate` if you need to translate websites or apps: https://github.com/fkirc/attranslate
+
 ## How does it work?
 
 `skip-duplicate-actions` uses the [Workflow Runs API](https://docs.github.com/en/rest/reference/actions#workflow-runs) to query workflow-runs.
