@@ -61,7 +61,7 @@ Therefore, when you push changes to a branch, `skip-duplicate-actions` will canc
 
 ### `github_token`
 
-**Required** Your access token for GitHub.
+A GitHub token that only needs to access the current repo. Default `github.token`.
 
 ### `paths_ignore`
 
@@ -117,7 +117,6 @@ jobs:
       - id: skip_check
         uses: fkirc/skip-duplicate-actions@master
         with:
-          github_token: ${{ github.token }}
           paths_ignore: '["**/README.md", "**/docs/**"]'
 
   main_job:
@@ -141,7 +140,6 @@ jobs:
       - id: skip_check
         uses: fkirc/skip-duplicate-actions@master
         with:
-          github_token: ${{ github.token }}
           cancel_others: 'false'
           paths: '["src/**", "dist/**"]'
       - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
@@ -153,12 +151,10 @@ jobs:
 ### Option 3: Cancellation-only
 
 If you do not care about the skip-features, then you can simply ignore the `should_skip`-output.
-In this case, the integration reduces to three lines:
+In this case, the integration reduces to the following:
 
 ```yml
   - uses: fkirc/skip-duplicate-actions@master
-    with:
-      github_token: ${{ github.token }}
 ```
 
 ## Related Projects
