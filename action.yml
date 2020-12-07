@@ -8,6 +8,7 @@ inputs:
   github_token:
     description: 'Your GitHub Access Token'
     required: true
+    default: ${{ github.token }}
   paths_ignore:
     description: 'A JSON-array with ignored path patterns, e.g. something like ["**/README.md", "**/docs/**"]'
     required: false
