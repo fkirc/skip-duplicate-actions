@@ -52,7 +52,6 @@ jobs:
       - id: skip_check
         uses: ./ # Uses this Action in the root directory
         with:
-          github_token: ${{ github.token }}
           paths_ignore: '["**/*.md"]'
           cancel_others: 'true'
           do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
