@@ -61,7 +61,7 @@ Therefore, when you push changes to a branch, `skip-duplicate-actions` will canc
 
 ### `github_token`
 
-**Required** Your access token for GitHub.
+A GitHub token that only needs to access the current repo. Default `github.token`.
 
 ### `paths_ignore`
 
