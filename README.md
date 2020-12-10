@@ -126,6 +126,7 @@ jobs:
       - id: skip_check
         uses: fkirc/skip-duplicate-actions@master
         with:
+          concurrent_skipping: 'never'
           paths_ignore: '["**/README.md", "**/docs/**"]'
 
   main_job:
