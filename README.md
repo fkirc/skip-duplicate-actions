@@ -68,10 +68,6 @@ Therefore, when you push changes to a branch, `skip-duplicate-actions` will canc
 
 ## Inputs
 
-### `github_token`
-
-A GitHub token that only needs to access the current repo. Default `github.token`.
-
 ### `paths_ignore`
 
 A JSON-array with ignored path-patterns, e.g. something like `'["**/README.md", "**/docs/**"]'`.
