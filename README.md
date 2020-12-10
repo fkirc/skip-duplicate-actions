@@ -3,6 +3,7 @@
 `skip-duplicate-actions` provides the following features to optimize GitHub Actions:
 
 - [Skip duplicate workflow-runs](#skip-duplicate-workflow-runs) after merges, pull requests or similar.
+- [Skip concurrent or parallel workflow-runs](#skip-concurrent-workflow-runs) for things that you do not want to run twice.
 - [Skip ignored paths](#skip-ignored-paths) to speedup documentation-changes or similar.
 - [Skip if paths not changed](#skip-if-paths-not-changed) for something like directory-specific tests.
 - [Cancel outdated workflow-runs](#cancel-outdated-workflow-runs) after branch-pushes.
@@ -17,12 +18,20 @@ For example, duplicate workflow-runs can happen if a workflow runs on a feature 
 `skip-duplicate-actions` helps to prevent such unnecessary runs.
 
 - **Full traceability:** After clean merges, you will see a message like `Skip execution because the exact same files have been successfully checked in <previous_run_URL>`.
-- **Skip concurrent workflow-runs:** If the same workflow is unnecessarily triggered twice, then one of the workflow-runs will be skipped.
-  For example, this can happen when you push a tag right after pushing a commit.
 - **Fully configurable:** By default, manual triggers and cron will never be skipped.
 - **Flexible Git usage:** `skip-duplicate-actions` does not care whether you use fast-forward-merges, rebase-merges or squash-merges.
   However, if a merge yields a result that is different from the source branch, then the resulting workflow-run will _not_ be skipped.
   This is commonly the case if you merge "outdated branches".
+
+## Skip concurrent workflow-runs
+
+Sometimes, there are workflows that you do not want to run twice at the same time even if they are triggered twice.
+Therefore, `skip-duplicate-actions` provides the following options to skip a workflow-run if the same workflow is already running:
+
+- **Always skip:** This is useful if you have a workflow that you never want to run twice at the same time.
+  In contrast to the [cancel_others](#cancel-outdated-workflow-runs) option, this option lets the older run finish instead of cancelling it.
+- **Only skip same content:** For example, this can be useful if a workflow has both a `push` and a `pull_request` trigger, or if you push a tag right after pushing a commit.
+- **Never skip:** This disables the concurrent skipping functionality, but still lets you use all other options like duplicate skipping.
 
 ## Skip ignored paths
 
