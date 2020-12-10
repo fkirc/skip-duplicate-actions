@@ -9877,9 +9877,19 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getConcurrentSkippingOptions = void 0;
 const core = __importStar(__webpack_require__(2186));
 const github = __importStar(__webpack_require__(5438));
 const micromatch = __webpack_require__(6228);
+const concurrentSkippingMap = {
+    "always": null,
+    "same_content": null,
+    "never": null,
+};
+function getConcurrentSkippingOptions() {
+    return Object.keys(concurrentSkippingMap);
+}
+exports.getConcurrentSkippingOptions = getConcurrentSkippingOptions;
 function parseWorkflowRun(run) {
     var _a, _b, _c;
     const treeHash = (_a = run.head_commit) === null || _a === void 0 ? void 0 : _a.tree_id;
@@ -9949,13 +9959,13 @@ async function main() {
             repoOwner,
             repoName,
             currentRun,
-            otherRuns: parseOlderRuns(data, currentRun),
+            olderRuns: parseOlderRuns(data, currentRun),
             allRuns: parseAllRuns(data),
             octokit,
             pathsIgnore: getStringArrayInput("paths_ignore"),
             paths: getStringArrayInput("paths"),
             doNotSkip: getStringArrayInput("do_not_skip"),
-            concurrentSkipping: getBooleanInput("concurrent_skipping", true),
+            concurrentSkipping: getConcurrentSkippingInput("concurrent_skipping"),
         };
     }
     catch (e) {
@@ -9971,10 +9981,8 @@ async function main() {
         core.info(`Do not skip execution because the workflow was triggered with '${context.currentRun.event}'`);
         exitSuccess({ shouldSkip: false });
     }
-    detectDuplicateRuns(context);
-    if (context.doNotSkip.includes("pull_request") || context.doNotSkip.includes("push")) {
-        detectExplicitConcurrentTrigger(context);
-    }
+    detectSuccessfulDuplicateRuns(context);
+    detectConcurrentRuns(context);
     if (context.paths.length >= 1 || context.pathsIgnore.length >= 1) {
         await backtracePathSkipping(context);
     }
@@ -9983,7 +9991,7 @@ async function main() {
 }
 async function cancelOutdatedRuns(context) {
     const currentRun = context.currentRun;
-    const cancelVictims = context.otherRuns.filter((run) => {
+    const cancelVictims = context.olderRuns.filter((run) => {
         if (run.status === 'completed') {
             return false;
         }
@@ -10010,8 +10018,8 @@ async function cancelWorkflowRun(run, context) {
         core.warning(`Failed to cancel ${run.html_url}`);
     }
 }
-function detectDuplicateRuns(context) {
-    const duplicateRuns = context.otherRuns.filter((run) => run.treeHash === context.currentRun.treeHash);
+function detectSuccessfulDuplicateRuns(context) {
+    const duplicateRuns = context.olderRuns.filter((run) => run.treeHash === context.currentRun.treeHash);
     const successfulDuplicate = duplicateRuns.find((run) => {
         return run.status === 'completed' && run.conclusion === 'success';
     });
@@ -10019,27 +10027,13 @@ function detectDuplicateRuns(context) {
         core.info(`Skip execution because the exact same files have been successfully checked in ${successfulDuplicate.html_url}`);
         exitSuccess({ shouldSkip: true });
     }
-    const concurrentDuplicate = duplicateRuns.find((run) => {
-        if (run.status === 'completed') {
-            return false;
-        }
-        if (context.currentRun.branch && context.currentRun.branch !== run.branch) {
-            core.info(`The exact same files are concurrently checked on a different branch in ${run.html_url}`);
-            return false;
-        }
-        return true;
-    });
-    if (concurrentDuplicate && context.concurrentSkipping) {
-        core.info(`Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`);
-        exitSuccess({ shouldSkip: true });
-    }
 }
-function detectExplicitConcurrentTrigger(context) {
-    if (!context.concurrentSkipping) {
+function detectConcurrentRuns(context) {
+    if (context.concurrentSkipping === "never") {
         return;
     }
-    const duplicateTriggerRun = context.allRuns.find((run) => {
-        if (run.treeHash !== context.currentRun.treeHash) {
+    const concurrentRuns = context.allRuns.filter((run) => {
+        if (run.status === 'completed') {
             return false;
         }
         if (run.runId === context.currentRun.runId) {
@@ -10047,9 +10041,21 @@ function detectExplicitConcurrentTrigger(context) {
         }
         return true;
     });
-    if (duplicateTriggerRun) {
-        core.info(`Skip execution because this is a '${context.currentRun.event}'-trigger and the exact same files are concurrently checked in ${duplicateTriggerRun.html_url}`);
+    if (!concurrentRuns.length) {
+        core.info(`Did not find any concurrent workflow-runs`);
+        return;
+    }
+    if (context.concurrentSkipping === "always") {
+        core.info(`Skip execution because another instance of the same workflow is already running in ${concurrentRuns[0].html_url}`);
         exitSuccess({ shouldSkip: true });
+    }
+    const concurrentDuplicate = concurrentRuns.find((run) => run.treeHash === context.currentRun.treeHash);
+    if (concurrentDuplicate) {
+        core.info(`Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`);
+        exitSuccess({ shouldSkip: true });
+    }
+    else {
+        core.info(`Did not find any duplicate concurrent workflow-runs`);
     }
 }
 async function backtracePathSkipping(context) {
@@ -10072,7 +10078,7 @@ async function backtracePathSkipping(context) {
 }
 function exitIfSuccessfulRunExists(commit, context) {
     const treeHash = commit.commit.tree.sha;
-    const matchingRuns = context.otherRuns.filter((run) => run.treeHash === treeHash);
+    const matchingRuns = context.olderRuns.filter((run) => run.treeHash === treeHash);
     const successfulRun = matchingRuns.find((run) => {
         return run.status === 'completed' && run.conclusion === 'success';
     });
@@ -10133,6 +10139,25 @@ async function fetchCommitDetails(sha, context) {
 function exitSuccess(args) {
     core.setOutput("should_skip", args.shouldSkip);
     return process.exit(0);
+}
+function formatCliOptions(options) {
+    return `${options.map((o) => `"${o}"`).join(", ")}`;
+}
+function getConcurrentSkippingInput(name) {
+    const rawInput = core.getInput(name, { required: true });
+    if (rawInput.toLowerCase() === 'false') {
+        return "never";
+    }
+    else if (rawInput.toLowerCase() === 'true') {
+        return "same_content";
+    }
+    const options = getConcurrentSkippingOptions();
+    if (options.includes(rawInput)) {
+        return rawInput;
+    }
+    else {
+        logFatal(`'${name}' must be one of${formatCliOptions(options)}`);
+    }
 }
 function getBooleanInput(name, defaultValue) {
     const rawInput = core.getInput(name, { required: false });
