@@ -15,7 +15,7 @@ You can choose any subset of those features.
 
 If you work with feature branches, then you might see lots of _duplicate workflow-runs_.
 For example, duplicate workflow-runs can happen if a workflow runs on a feature branch, but then the workflow is repeated right after merging the feature branch.
-`skip-duplicate-actions` helps to prevent such unnecessary runs.
+`skip-duplicate-actions` allows to prevent such runs.
 
 - **Full traceability:** After clean merges, you will see a message like `Skip execution because the exact same files have been successfully checked in <previous_run_URL>`.
 - **Fully configurable:** By default, manual triggers and cron will never be skipped.
