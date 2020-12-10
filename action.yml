@@ -26,9 +26,9 @@ inputs:
     required: false
     default: '["workflow_dispatch", "schedule"]'
   concurrent_skipping:
-    description: 'If false, unfinished workflow-runs will be safely ignored'
-    required: false
-    default: 'true'
+    description: 'One of never, same_content, always'
+    required: true
+    default: 'never'
 
 outputs:
   should_skip:

@@ -16,6 +16,7 @@ jobs:
       - id: skip_check
         uses: fkirc/skip-duplicate-actions@master
         with:
+          concurrent_skipping: 'never'
           paths_ignore: '["**/README.md", "**/docs/**"]'
 
   main_job:
@@ -53,8 +54,8 @@ jobs:
           github_token: ${{ github.token }}
           paths_ignore: '["**/*.md"]'
           cancel_others: 'true'
+          concurrent_skipping: 'always'
           do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
-          concurrent_skipping: 'true'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
           echo "Do stuff..." && sleep 30
