@@ -96,7 +96,7 @@ A JSON-array with triggers that should never be skipped. Default `'["workflow_di
 
 ### `concurrent_skipping`
 
-If false, unfinished workflow-runs will be safely ignored. Default `true`.
+One of `never`, `same_content`, `always`. Default `never`.
 
 ## Outputs
 
