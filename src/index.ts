@@ -15,7 +15,7 @@ const concurrentSkippingMap = {
   "same_content": null,
   "never": null,
 }
-export function getConcurrentSkippingOptions(): string[] {
+function getConcurrentSkippingOptions(): string[] {
   return Object.keys(concurrentSkippingMap);
 }
 type ConcurrentSkippingOption = keyof typeof concurrentSkippingMap;
