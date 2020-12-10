@@ -332,7 +332,7 @@ function getConcurrentSkippingInput(name: string): ConcurrentSkippingOption {
   if (options.includes(rawInput)) {
     return rawInput as ConcurrentSkippingOption;
   } else {
-    logFatal(`'${name}' must be one of${formatCliOptions(options)}`);
+    logFatal(`'${name}' must be one of ${formatCliOptions(options)}`);
   }
 }
 

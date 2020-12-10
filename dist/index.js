@@ -10156,7 +10156,7 @@ function getConcurrentSkippingInput(name) {
         return rawInput;
     }
     else {
-        logFatal(`'${name}' must be one of${formatCliOptions(options)}`);
+        logFatal(`'${name}' must be one of ${formatCliOptions(options)}`);
     }
 }
 function getBooleanInput(name, defaultValue) {
