@@ -6,7 +6,6 @@ on:
 
 jobs:
   build:
-    needs: pre_job
     runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-node@v1
