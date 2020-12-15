@@ -26,7 +26,7 @@ inputs:
     required: false
     default: '["workflow_dispatch", "schedule"]'
   concurrent_skipping:
-    description: 'One of never, same_content, always'
+    description: 'One of never, same_content, outdated_runs, always'
     required: true
     default: 'never'
 
