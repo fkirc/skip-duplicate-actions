@@ -88,7 +88,7 @@ Default `[]`.
 
 If true, then workflow-runs from outdated commits will be cancelled. Default `true`.
 
-## `skip_after_successful_duplicate`
+### `skip_after_successful_duplicate`
 
 If true, skip if an already finished duplicate run can be found. Default `true`.
 
