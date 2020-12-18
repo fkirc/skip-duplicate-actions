@@ -9992,7 +9992,7 @@ async function main() {
             await backtracePathSkipping(context);
         }
         else {
-            core.info(`Skip paths detection because 'skip_after_successful_duplicate' is set to false`);
+            core.info(`Ignore paths detection because 'skip_after_successful_duplicate' is set to false`);
         }
     }
     core.info("Do not skip execution because we did not find a transferable run");
