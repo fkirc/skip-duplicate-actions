@@ -22,7 +22,7 @@ inputs:
     required: false
     default: 'true'
   skip_after_successful_duplicate:
-    description: 'If true, skip if already finished duplicate runs can be found'
+    description: 'If true, skip if an already finished duplicate run can be found'
     required: false
     default: 'true'
   do_not_skip:

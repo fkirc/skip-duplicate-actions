@@ -90,7 +90,7 @@ If true, then workflow-runs from outdated commits will be cancelled. Default `tr
 
 ## `skip_after_successful_duplicate`
 
-If true, skip if already finished duplicate runs can be found. Default `true`.
+If true, skip if an already finished duplicate run can be found. Default `true`.
 
 ### `do_not_skip`
 
