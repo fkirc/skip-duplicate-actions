@@ -17,6 +17,7 @@ jobs:
         uses: fkirc/skip-duplicate-actions@master
         with:
           concurrent_skipping: 'never'
+          skip_after_successful_duplicate: 'true'
           paths_ignore: '["**/README.md", "**/docs/**"]'
 
   main_job:
@@ -55,6 +56,7 @@ jobs:
           paths_ignore: '["**/*.md"]'
           cancel_others: 'true'
           concurrent_skipping: 'outdated_runs'
+          skip_after_successful_duplicate: 'false'
           do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |

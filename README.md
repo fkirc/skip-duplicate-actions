@@ -88,6 +88,10 @@ Default `[]`.
 
 If true, then workflow-runs from outdated commits will be cancelled. Default `true`.
 
+### `skip_after_successful_duplicate`
+
+If true, skip if an already finished duplicate run can be found. Default `true`.
+
 ### `do_not_skip`
 
 A JSON-array with triggers that should never be skipped. Default `'["workflow_dispatch", "schedule"]'`.
@@ -100,7 +104,7 @@ One of `never`, `same_content`, `outdated_runs`, `always`. Default `never`.
 
 ### `should_skip`
 
-true if the current run can be safely skipped. This should be evaluated for either individual steps or entire jobs.
+true if the current run should be skipped according to your configured rules. This should be evaluated for either individual steps or entire jobs.
 
 ## Usage examples
 
@@ -125,6 +129,7 @@ jobs:
         uses: fkirc/skip-duplicate-actions@master
         with:
           concurrent_skipping: 'never'
+          skip_after_successful_duplicate: 'true'
           paths_ignore: '["**/README.md", "**/docs/**"]'
 
   main_job:

@@ -21,6 +21,10 @@ inputs:
     description: 'If true, then workflow-runs from outdated commits will be cancelled'
     required: false
     default: 'true'
+  skip_after_successful_duplicate:
+    description: 'If true, skip if an already finished duplicate run can be found'
+    required: false
+    default: 'true'
   do_not_skip:
     description: 'A JSON-array with triggers that should never be skipped'
     required: false

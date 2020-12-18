@@ -9980,8 +9980,13 @@ async function main() {
         core.info(`Do not skip execution because the workflow was triggered with '${context.currentRun.event}'`);
         exitSuccess({ shouldSkip: false });
     }
-    detectSuccessfulDuplicateRuns(context);
-    detectConcurrentRuns(context);
+    const skipAfterSuccessfulDuplicates = getBooleanInput('skip_after_successful_duplicate', true);
+    if (skipAfterSuccessfulDuplicates) {
+        detectSuccessfulDuplicateRuns(context);
+    }
+    if (context.concurrentSkipping !== "never") {
+        detectConcurrentRuns(context);
+    }
     if (context.paths.length >= 1 || context.pathsIgnore.length >= 1) {
         await backtracePathSkipping(context);
     }
@@ -10028,9 +10033,6 @@ function detectSuccessfulDuplicateRuns(context) {
     }
 }
 function detectConcurrentRuns(context) {
-    if (context.concurrentSkipping === "never") {
-        return;
-    }
     const concurrentRuns = context.allRuns.filter((run) => {
         if (run.status === 'completed') {
             return false;
