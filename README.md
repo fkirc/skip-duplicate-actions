@@ -88,6 +88,10 @@ Default `[]`.
 
 If true, then workflow-runs from outdated commits will be cancelled. Default `true`.
 
+## `skip_after_successful_duplicate`
+
+If true, skip if already finished duplicate runs can be found. Default `true`.
+
 ### `do_not_skip`
 
 A JSON-array with triggers that should never be skipped. Default `'["workflow_dispatch", "schedule"]'`.
