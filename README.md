@@ -104,7 +104,7 @@ One of `never`, `same_content`, `outdated_runs`, `always`. Default `never`.
 
 ### `should_skip`
 
-true if the current run can be safely skipped. This should be evaluated for either individual steps or entire jobs.
+true if the current run should be skipped according to your configured rules. This should be evaluated for either individual steps or entire jobs.
 
 ## Usage examples
 
