@@ -57,7 +57,7 @@ jobs:
           github_token: ${{ github.token }}
           paths_ignore: '["**/*.md"]'
           cancel_others: 'true'
-          concurrent_skipping: 'outdated_runs'
+          concurrent_skipping: 'never'
           skip_after_successful_duplicate: 'true'
           do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
       - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
