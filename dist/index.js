@@ -10110,7 +10110,7 @@ function isCommitSkippable(commit, context) {
         core.info(`Commit ${commit.html_url} is path-skipped: None of '${changedFiles}' matches against patterns '${context.paths}'`);
         return true;
     }
-    core.info(`Stop backtracking at commit ${commit.html_url}: '${changedFiles}' are not skippable against paths '${context.paths}' or paths_ignore '${context.pathsIgnore}'`);
+    core.info(`Stop backtracking at commit ${commit.html_url} because '${changedFiles}' are not skippable against paths '${context.paths}' or paths_ignore '${context.pathsIgnore}'`);
     return false;
 }
 const globOptions = {
