@@ -172,11 +172,6 @@ In this case, the integration reduces to the following:
   - uses: fkirc/skip-duplicate-actions@master
 ```
 
-## Related Projects
-
-GitHub is not the only thing that should be optimized.
-Try `attranslate` if you need to translate websites or apps: https://github.com/fkirc/attranslate
-
 ## How does it work?
 
 `skip-duplicate-actions` uses the [Workflow Runs API](https://docs.github.com/en/rest/reference/actions#workflow-runs) to query workflow-runs.
@@ -184,7 +179,31 @@ Try `attranslate` if you need to translate websites or apps: https://github.com/
 After querying such workflow-runs, it will compare them with the current workflow-run as follows:
 
 - If there exists a workflow-runs with the same tree hash, then we have identified a duplicate workflow-run.
-- If there exists an in-progress workflow-run that matches the current branch but not the current tree hash, then this workflow-run will be cancelled.
+- If there exists an in-progress workflow-run, then we can cancel it or skip, depending on your configuration.
 
-`skip-duplicate-actions` uses the [Repos Commit API](https://docs.github.com/en/rest/reference/repos#get-a-commit) to perform an efficient backtracking-algorithm for paths-skipping-detection.
-Moreover, a synergy with the cancellation-feature reduces the number of REST API calls.
+## How does path-skipping work?
+
+As mentioned above, `skip-duplicate-actions` provides a path-skipping functionality that is somewhat similar to GitHub's native `paths` and `paths_ignore` functionality.
+However, path-skipping is not entirely trivial because there exist multiple options on how to do path-skipping.
+Depending on your project, you might want to choose one of the following options:
+
+### Option 1: Only look at the "current" commit
+
+This is the thing that GitHub is currently doing, and I consider it as insufficient because it doesn't work for "required" checks.
+Another problem is that the outcomes can be heavily dependent on which commits were pushed at which time, instead of the actual content that was pushed.
+
+### Option 2: Look at Pull-Request-diffs
+
+This option is probably implemented by https://github.com/dorny/paths-filter.
+PR-diffs are simple to understand, but not everyone is using PRs for everything, so this is not an option for everyone.
+
+### Option 3: Look for successful checks of previous commits
+
+This is my personal favorite option and this is implemented by `skip-duplicate-actions`.
+An advantage is that this works regardless of whether you are using PRs or feature-branches, and of course it also works for "required" checks.
+Internally, `skip-duplicate-actions` uses the [Repos Commit API](https://docs.github.com/en/rest/reference/repos#get-a-commit) to perform an efficient backtracking-algorithm for paths-skipping-detection.
+
+## Related Projects
+
+GitHub is not the only thing that should be optimized.
+Try `attranslate` if you need to translate websites or apps: https://github.com/fkirc/attranslate
