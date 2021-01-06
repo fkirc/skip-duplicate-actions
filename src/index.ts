@@ -358,7 +358,7 @@ function getBooleanInput(name: string, defaultValue: boolean): boolean {
   if (defaultValue) {
     return rawInput.toLowerCase() !== 'false';
   } else {
-    return rawInput.toLowerCase() !== 'true';
+    return rawInput.toLowerCase() === 'true';
   }
 }
 
