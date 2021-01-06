@@ -10182,7 +10182,7 @@ function getBooleanInput(name, defaultValue) {
         return rawInput.toLowerCase() !== 'false';
     }
     else {
-        return rawInput.toLowerCase() !== 'true';
+        return rawInput.toLowerCase() === 'true';
     }
 }
 function getStringArrayInput(name) {
