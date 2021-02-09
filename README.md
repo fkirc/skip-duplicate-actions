@@ -29,8 +29,10 @@ Sometimes, there are workflows that you do not want to run twice at the same tim
 Therefore, `skip-duplicate-actions` provides the following options to skip a workflow-run if the same workflow is already running:
 
 - **Always skip:** This is useful if you have a workflow that you never want to run twice at the same time.
-  In contrast to the [cancel_others](#cancel-outdated-workflow-runs) option, this option lets the older run finish.
+  In contrast to the [cancel_others](#cancel-outdated-workflow-runs) option, this option allows older runs to finish.
 - **Only skip same content:** For example, this can be useful if a workflow has both a `push` and a `pull_request` trigger, or if you push a tag right after pushing a commit.
+- **Only skip outdated runs:** For example, this can be useful for skip-checks that are not at the beginning of a job.
+  In contrast to the [cancel_others](#cancel-outdated-workflow-runs) option, this option skips at pre-defined places instead of cancelling at arbitrary places.
 - **Never skip:** This disables the concurrent skipping functionality, but still lets you use all other options like duplicate skipping.
 
 ## Skip ignored paths
@@ -86,19 +88,23 @@ Default `[]`.
 
 If true, then workflow-runs from outdated commits will be cancelled. Default `true`.
 
+### `skip_after_successful_duplicate`
+
+If true, skip if an already finished duplicate run can be found. Default `true`.
+
 ### `do_not_skip`
 
 A JSON-array with triggers that should never be skipped. Default `'["workflow_dispatch", "schedule"]'`.
 
 ### `concurrent_skipping`
 
-One of `never`, `same_content`, `always`. Default `never`.
+One of `never`, `same_content`, `outdated_runs`, `always`. Default `never`.
 
 ## Outputs
 
 ### `should_skip`
 
-true if the current run can be safely skipped. This should be evaluated for either individual steps or entire jobs.
+true if the current run should be skipped according to your configured rules. This should be evaluated for either individual steps or entire jobs.
 
 ## Usage examples
 
@@ -122,8 +128,11 @@ jobs:
       - id: skip_check
         uses: fkirc/skip-duplicate-actions@master
         with:
+          # All of these options are optional, so you can remove them if you are happy with the defaults
           concurrent_skipping: 'never'
+          skip_after_successful_duplicate: 'true'
           paths_ignore: '["**/README.md", "**/docs/**"]'
+          do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
 
   main_job:
     needs: pre_job
@@ -163,11 +172,6 @@ In this case, the integration reduces to the following:
   - uses: fkirc/skip-duplicate-actions@master
 ```
 
-## Related Projects
-
-GitHub is not the only thing that should be optimized.
-Try `attranslate` if you need to translate websites or apps: https://github.com/fkirc/attranslate
-
 ## How does it work?
 
 `skip-duplicate-actions` uses the [Workflow Runs API](https://docs.github.com/en/rest/reference/actions#workflow-runs) to query workflow-runs.
@@ -175,7 +179,31 @@ Try `attranslate` if you need to translate websites or apps: https://github.com/
 After querying such workflow-runs, it will compare them with the current workflow-run as follows:
 
 - If there exists a workflow-runs with the same tree hash, then we have identified a duplicate workflow-run.
-- If there exists an in-progress workflow-run that matches the current branch but not the current tree hash, then this workflow-run will be cancelled.
+- If there exists an in-progress workflow-run, then we can cancel it or skip, depending on your configuration.
 
-`skip-duplicate-actions` uses the [Repos Commit API](https://docs.github.com/en/rest/reference/repos#get-a-commit) to perform an efficient backtracking-algorithm for paths-skipping-detection.
-Moreover, a synergy with the cancellation-feature reduces the number of REST API calls.
+## How does path-skipping work?
+
+As mentioned above, `skip-duplicate-actions` provides a path-skipping functionality that is somewhat similar to GitHub's native `paths` and `paths_ignore` functionality.
+However, path-skipping is not entirely trivial because there exist multiple options on how to do path-skipping.
+Depending on your project, you might want to choose one of the following options:
+
+### Option 1: Only look at the "current" commit
+
+This is the thing that GitHub is currently doing, and I consider it as insufficient because it doesn't work for "required" checks.
+Another problem is that the outcomes can be heavily dependent on which commits were pushed at which time, instead of the actual content that was pushed.
+
+### Option 2: Look at Pull-Request-diffs
+
+This option is probably implemented by https://github.com/dorny/paths-filter.
+PR-diffs are simple to understand, but not everyone is using PRs for everything, so this is not an option for everyone.
+
+### Option 3: Look for successful checks of previous commits
+
+This is my personal favorite option and this is implemented by `skip-duplicate-actions`.
+An advantage is that this works regardless of whether you are using PRs or feature-branches, and of course it also works for "required" checks.
+Internally, `skip-duplicate-actions` uses the [Repos Commit API](https://docs.github.com/en/rest/reference/repos#get-a-commit) to perform an efficient backtracking-algorithm for paths-skipping-detection.
+
+## Related Projects
+
+GitHub is not the only thing that should be optimized.
+Try `attranslate` if you need to translate websites or apps: https://github.com/fkirc/attranslate

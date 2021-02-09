@@ -9883,6 +9883,7 @@ const micromatch = __webpack_require__(6228);
 const concurrentSkippingMap = {
     "always": null,
     "same_content": null,
+    "outdated_runs": null,
     "never": null,
 };
 function getConcurrentSkippingOptions() {
@@ -9979,10 +9980,20 @@ async function main() {
         core.info(`Do not skip execution because the workflow was triggered with '${context.currentRun.event}'`);
         exitSuccess({ shouldSkip: false });
     }
-    detectSuccessfulDuplicateRuns(context);
-    detectConcurrentRuns(context);
+    const skipAfterSuccessfulDuplicates = getBooleanInput('skip_after_successful_duplicate', true);
+    if (skipAfterSuccessfulDuplicates) {
+        detectSuccessfulDuplicateRuns(context);
+    }
+    if (context.concurrentSkipping !== "never") {
+        detectConcurrentRuns(context);
+    }
     if (context.paths.length >= 1 || context.pathsIgnore.length >= 1) {
-        await backtracePathSkipping(context);
+        if (skipAfterSuccessfulDuplicates) {
+            await backtracePathSkipping(context);
+        }
+        else {
+            core.warning(`Ignore paths detection because 'skip_after_successful_duplicate' is set to false`);
+        }
     }
     core.info("Do not skip execution because we did not find a transferable run");
     exitSuccess({ shouldSkip: false });
@@ -10027,9 +10038,6 @@ function detectSuccessfulDuplicateRuns(context) {
     }
 }
 function detectConcurrentRuns(context) {
-    if (context.concurrentSkipping === "never") {
-        return;
-    }
     const concurrentRuns = context.allRuns.filter((run) => {
         if (run.status === 'completed') {
             return false;
@@ -10047,14 +10055,21 @@ function detectConcurrentRuns(context) {
         core.info(`Skip execution because another instance of the same workflow is already running in ${concurrentRuns[0].html_url}`);
         exitSuccess({ shouldSkip: true });
     }
-    const concurrentDuplicate = concurrentRuns.find((run) => run.treeHash === context.currentRun.treeHash);
-    if (concurrentDuplicate) {
-        core.info(`Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`);
-        exitSuccess({ shouldSkip: true });
+    else if (context.concurrentSkipping === "outdated_runs") {
+        const newerRun = concurrentRuns.find((run) => new Date(run.createdAt).getTime() > new Date(context.currentRun.createdAt).getTime());
+        if (newerRun) {
+            core.info(`Skip execution because a newer instance of the same workflow is running in ${newerRun.html_url}`);
+            exitSuccess({ shouldSkip: true });
+        }
     }
-    else {
-        core.info(`Did not find any duplicate concurrent workflow-runs`);
+    else if (context.concurrentSkipping === "same_content") {
+        const concurrentDuplicate = concurrentRuns.find((run) => run.treeHash === context.currentRun.treeHash);
+        if (concurrentDuplicate) {
+            core.info(`Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`);
+            exitSuccess({ shouldSkip: true });
+        }
     }
+    core.info(`Did not find any skippable concurrent workflow-runs`);
 }
 async function backtracePathSkipping(context) {
     var _a, _b;
@@ -10095,6 +10110,7 @@ function isCommitSkippable(commit, context) {
         core.info(`Commit ${commit.html_url} is path-skipped: None of '${changedFiles}' matches against patterns '${context.paths}'`);
         return true;
     }
+    core.info(`Stop backtracking at commit ${commit.html_url} because '${changedFiles}' are not skippable against paths '${context.paths}' or paths_ignore '${context.pathsIgnore}'`);
     return false;
 }
 const globOptions = {
@@ -10166,7 +10182,7 @@ function getBooleanInput(name, defaultValue) {
         return rawInput.toLowerCase() !== 'false';
     }
     else {
-        return rawInput.toLowerCase() !== 'true';
+        return rawInput.toLowerCase() === 'true';
     }
 }
 function getStringArrayInput(name) {
