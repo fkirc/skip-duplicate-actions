@@ -20,7 +20,7 @@ inputs:
   cancel_others:
     description: 'If true, then workflow-runs from outdated commits will be cancelled'
     required: false
-    default: 'true'
+    default: 'false'
   skip_after_successful_duplicate:
     description: 'If true, skip if an already finished duplicate run can be found'
     required: false

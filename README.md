@@ -29,10 +29,8 @@ Sometimes, there are workflows that you do not want to run twice at the same tim
 Therefore, `skip-duplicate-actions` provides the following options to skip a workflow-run if the same workflow is already running:
 
 - **Always skip:** This is useful if you have a workflow that you never want to run twice at the same time.
-  In contrast to the [cancel_others](#cancel-outdated-workflow-runs) option, this option allows older runs to finish.
 - **Only skip same content:** For example, this can be useful if a workflow has both a `push` and a `pull_request` trigger, or if you push a tag right after pushing a commit.
 - **Only skip outdated runs:** For example, this can be useful for skip-checks that are not at the beginning of a job.
-  In contrast to the [cancel_others](#cancel-outdated-workflow-runs) option, this option skips at pre-defined places instead of cancelling at arbitrary places.
 - **Never skip:** This disables the concurrent skipping functionality, but still lets you use all other options like duplicate skipping.
 
 ## Skip ignored paths
@@ -86,7 +84,7 @@ Default `[]`.
 
 ### `cancel_others`
 
-If true, then workflow-runs from outdated commits will be cancelled. Default `true`.
+If true, then workflow-runs from outdated commits will be cancelled. Default `false`.
 
 ### `skip_after_successful_duplicate`
 
