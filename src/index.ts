@@ -137,7 +137,7 @@ async function main() {
     exitSuccess({shouldSkip: false});
   }
 
-  const cancelOthers = getBooleanInput('cancel_others', true);
+  const cancelOthers = getBooleanInput('cancel_others', false);
   if (cancelOthers) {
     await cancelOutdatedRuns(context);
   }

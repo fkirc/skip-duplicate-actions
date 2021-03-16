@@ -9972,7 +9972,7 @@ async function main() {
         core.warning(`Failed to fetch the required workflow information`);
         exitSuccess({ shouldSkip: false });
     }
-    const cancelOthers = getBooleanInput('cancel_others', true);
+    const cancelOthers = getBooleanInput('cancel_others', false);
     if (cancelOthers) {
         await cancelOutdatedRuns(context);
     }
