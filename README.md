@@ -61,7 +61,7 @@ Instead of blindly skipping checks, the backtracking-algorithm will only skip so
 ## Cancel outdated workflow-runs
 
 Typically, workflows should only run for the most recent commit.
-Therefore, when you push changes to a branch, `skip-duplicate-actions` will cancel any previous workflow-runs that run against outdated commits.
+Therefore, when you push changes to a branch, `skip-duplicate-actions` can be configured to cancel any previous workflow-runs that run against outdated commits.
 
 - **Full traceability:** If a workflow-run is cancelled, then you will see a message like `Cancelled <previous_run_URL>`.
 - **Guaranteed execution:** The cancellation-algorithm guarantees that a complete check-set will finish no matter what.
@@ -159,15 +159,6 @@ jobs:
         run: |
           echo "Run only if src/ or dist/ changed..." && sleep 30
           echo "Do other stuff..."
-```
-
-### Option 3: Cancellation-only
-
-If you do not care about the skip-features, then you can simply ignore the `should_skip`-output.
-In this case, the integration reduces to the following:
-
-```yml
-  - uses: fkirc/skip-duplicate-actions@master
 ```
 
 ## How does it work?
