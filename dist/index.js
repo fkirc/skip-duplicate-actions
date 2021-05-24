@@ -10065,8 +10065,11 @@ function detectConcurrentRuns(context) {
     else if (context.concurrentSkipping === "same_content") {
         const concurrentDuplicate = concurrentRuns.find((run) => run.treeHash === context.currentRun.treeHash);
         if (concurrentDuplicate) {
-            core.info(`Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`);
-            exitSuccess({ shouldSkip: true });
+            const concurrentIsOlder = concurrentRuns.find((run) => new Date(run.createdAt).getTime() < new Date(context.currentRun.createdAt).getTime());
+            if (concurrentIsOlder) {
+                core.info(`Skip execution because the exact same files are concurrently checked in older ${concurrentDuplicate.html_url}`);
+                exitSuccess({ shouldSkip: true });
+            }
         }
     }
     core.info(`Did not find any skippable concurrent workflow-runs`);
