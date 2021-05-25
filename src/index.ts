@@ -13,6 +13,7 @@ type WorkflowRunConclusion = 'success' | 'failure' | 'neutral' | 'cancelled' | '
 const concurrentSkippingMap = {
   "always": null,
   "same_content": null,
+  "same_content_newer": null,
   "outdated_runs": null,
   "never": null,
 }
@@ -227,13 +228,18 @@ function detectConcurrentRuns(context: WRunContext) {
       core.info(`Skip execution because a newer instance of the same workflow is running in ${newerRun.html_url}`);
       exitSuccess({ shouldSkip: true });
     }
-  } else if (context.concurrentSkipping === "same_content") {
+  } else if (context.concurrentSkipping === "same_content" || context.concurrentSkipping === "same_content_newer") {
     const concurrentDuplicate = concurrentRuns.find((run) => run.treeHash === context.currentRun.treeHash);
     if (concurrentDuplicate) {
-      const concurrentIsOlder = concurrentRuns.find((run) => new Date(run.createdAt).getTime() < new Date(context.currentRun.createdAt).getTime());
-      if (concurrentIsOlder) {
-        core.info(`Skip execution because the exact same files are concurrently checked in older ${concurrentDuplicate.html_url}`);
+      if (context.concurrentSkipping === "same_content") {
+        core.info(`Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`);
         exitSuccess({ shouldSkip: true });
+      } else if (context.concurrentSkipping === "same_content_newer") {
+        const concurrentIsOlder = concurrentRuns.find((run) => new Date(run.createdAt).getTime() < new Date(context.currentRun.createdAt).getTime());
+        if (concurrentIsOlder) {
+          core.info(`Skip execution because the exact same files are concurrently checked in older ${concurrentDuplicate.html_url}`);
+          exitSuccess({ shouldSkip: true });
+        }
       }
     }
   }
