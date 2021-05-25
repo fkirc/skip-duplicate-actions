@@ -9883,6 +9883,7 @@ const micromatch = __webpack_require__(6228);
 const concurrentSkippingMap = {
     "always": null,
     "same_content": null,
+    "same_content_newer": null,
     "outdated_runs": null,
     "never": null,
 };
@@ -10062,11 +10063,20 @@ function detectConcurrentRuns(context) {
             exitSuccess({ shouldSkip: true });
         }
     }
-    else if (context.concurrentSkipping === "same_content") {
+    else if (context.concurrentSkipping === "same_content" || context.concurrentSkipping === "same_content_newer") {
         const concurrentDuplicate = concurrentRuns.find((run) => run.treeHash === context.currentRun.treeHash);
         if (concurrentDuplicate) {
-            core.info(`Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`);
-            exitSuccess({ shouldSkip: true });
+            if (context.concurrentSkipping === "same_content") {
+                core.info(`Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`);
+                exitSuccess({ shouldSkip: true });
+            }
+            else if (context.concurrentSkipping === "same_content_newer") {
+                const concurrentIsOlder = concurrentRuns.find((run) => new Date(run.createdAt).getTime() < new Date(context.currentRun.createdAt).getTime());
+                if (concurrentIsOlder) {
+                    core.info(`Skip execution because the exact same files are concurrently checked in older ${concurrentDuplicate.html_url}`);
+                    exitSuccess({ shouldSkip: true });
+                }
+            }
         }
     }
     core.info(`Did not find any skippable concurrent workflow-runs`);
