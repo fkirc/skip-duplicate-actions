@@ -9,7 +9,7 @@
   "dependencies": {
     "@actions/core": "^1.2.6",
     "@actions/github": "^4.0.0",
-    "@vercel/ncc": "^0.24.1",
+    "@vercel/ncc": "^0.28.6",
     "micromatch": "^4.0.2"
   },
   "devDependencies": {
