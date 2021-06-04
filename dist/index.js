@@ -9911,6 +9911,7 @@ function parseWorkflowRun(run) {
         runId: run.id,
         workflowId,
         createdAt: run.created_at,
+        runNumber: run.run_number,
     };
 }
 function parseAllRuns(response) {
@@ -10071,7 +10072,7 @@ function detectConcurrentRuns(context) {
                 exitSuccess({ shouldSkip: true });
             }
             else if (context.concurrentSkipping === "same_content_newer") {
-                const concurrentIsOlder = concurrentRuns.find((run) => new Date(run.createdAt).getTime() < new Date(context.currentRun.createdAt).getTime());
+                const concurrentIsOlder = concurrentRuns.find((run) => run.runNumber < context.currentRun.runNumber);
                 if (concurrentIsOlder) {
                     core.info(`Skip execution because the exact same files are concurrently checked in older ${concurrentDuplicate.html_url}`);
                     exitSuccess({ shouldSkip: true });

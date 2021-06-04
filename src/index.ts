@@ -33,6 +33,7 @@ interface WorkflowRun {
   runId: number;
   workflowId: number;
   createdAt: string;
+  runNumber: number;
 }
 
 type WRunTrigger =  "pull_request" | "push" | "workflow_dispatch" | "schedule";
@@ -70,6 +71,7 @@ function parseWorkflowRun(run: ActionsGetWorkflowRunResponseData): WorkflowRun {
     runId: run.id,
     workflowId,
     createdAt: run.created_at,
+    runNumber: run.run_number,
   }
 }
 
@@ -235,7 +237,7 @@ function detectConcurrentRuns(context: WRunContext) {
         core.info(`Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`);
         exitSuccess({ shouldSkip: true });
       } else if (context.concurrentSkipping === "same_content_newer") {
-        const concurrentIsOlder = concurrentRuns.find((run) => new Date(run.createdAt).getTime() < new Date(context.currentRun.createdAt).getTime());
+        const concurrentIsOlder = concurrentRuns.find((run) => run.runNumber < context.currentRun.runNumber);
         if (concurrentIsOlder) {
           core.info(`Skip execution because the exact same files are concurrently checked in older ${concurrentDuplicate.html_url}`);
           exitSuccess({ shouldSkip: true });
