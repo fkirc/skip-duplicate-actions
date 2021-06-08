@@ -7,7 +7,7 @@
     "build": "ncc build src/index.ts"
   },
   "dependencies": {
-    "@actions/core": "^1.2.6",
+    "@actions/core": "^1.4.0",
     "@actions/github": "^4.0.0",
     "@vercel/ncc": "^0.24.1",
     "micromatch": "^4.0.2"
