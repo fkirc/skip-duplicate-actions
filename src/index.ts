@@ -230,19 +230,17 @@ function detectConcurrentRuns(context: WRunContext) {
       core.info(`Skip execution because a newer instance of the same workflow is running in ${newerRun.html_url}`);
       exitSuccess({ shouldSkip: true });
     }
-  } else if (context.concurrentSkipping === "same_content" || context.concurrentSkipping === "same_content_newer") {
+  } else if (context.concurrentSkipping === "same_content") {
     const concurrentDuplicate = concurrentRuns.find((run) => run.treeHash === context.currentRun.treeHash);
     if (concurrentDuplicate) {
-      if (context.concurrentSkipping === "same_content") {
-        core.info(`Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`);
-        exitSuccess({ shouldSkip: true });
-      } else if (context.concurrentSkipping === "same_content_newer") {
-        const concurrentIsOlder = concurrentRuns.find((run) => run.runNumber < context.currentRun.runNumber);
-        if (concurrentIsOlder) {
-          core.info(`Skip execution because the exact same files are concurrently checked in older ${concurrentDuplicate.html_url}`);
-          exitSuccess({ shouldSkip: true });
-        }
-      }
+      core.info(`Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`);
+      exitSuccess({ shouldSkip: true });
+    }
+  } else if (context.concurrentSkipping === "same_content_newer") {
+    const concurrentIsOlder = concurrentRuns.find((run) => (run.treeHash === context.currentRun.treeHash) && (run.runNumber < context.currentRun.runNumber));
+    if (concurrentIsOlder) {
+      core.info(`Skip execution because the exact same files are concurrently checked in older ${concurrentIsOlder.html_url}`);
+      exitSuccess({ shouldSkip: true });
     }
   }
   core.info(`Did not find any skippable concurrent workflow-runs`);
