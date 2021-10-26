@@ -15,4 +15,4 @@ jobs:
       - uses: actions/checkout@v2
       - run: yarn install --frozen-lockfile
       - run: npm run build
-      - run: git diff --exit-code
+      - run: git diff --exit-code # Ensure that JS in dist was re-compiled
