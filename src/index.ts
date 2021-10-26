@@ -156,11 +156,7 @@ async function main() {
     detectConcurrentRuns(context);
   }
   if (context.paths.length >= 1 || context.pathsIgnore.length >= 1) {
-    if (skipAfterSuccessfulDuplicates) {
-      await backtracePathSkipping(context);
-    } else {
-      core.warning(`Ignore paths detection because 'skip_after_successful_duplicate' is set to false`);
-    }
+     await backtracePathSkipping(context);
   }
   core.info("Do not skip execution because we did not find a transferable run");
   exitSuccess({ shouldSkip: false });
