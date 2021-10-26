@@ -105,6 +105,10 @@ One of `never`, `same_content`, `same_content_newer`, `outdated_runs`, `always`.
 
 true if the current run should be skipped according to your configured rules. This should be evaluated for either individual steps or entire jobs.
 
+### `successful_duplicate`
+
+If the current run is skipped because a successful duplicate has been found, the run ID of the successful duplicate will be returned here.
+
 ## Usage examples
 
 You can use `skip-duplicate-actions` to either skip individual steps or entire jobs.
