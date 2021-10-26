@@ -257,7 +257,9 @@ async function backtracePathSkipping(context: WRunContext) {
     }
     iterSha = commit.parents?.length ? commit.parents[0]?.sha : null;
 
-    exitIfSuccessfulRunExists(commit, context);
+    if (distanceToHEAD >= 1) {
+      exitIfSuccessfulRunExists(commit, context);
+    }
 
     if (distanceToHEAD++ >= 50) {
       // Should be never reached in practice; we expect that this loop aborts after 1-3 iterations.

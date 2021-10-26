@@ -10090,7 +10090,9 @@ async function backtracePathSkipping(context) {
             return;
         }
         iterSha = ((_a = commit.parents) === null || _a === void 0 ? void 0 : _a.length) ? (_b = commit.parents[0]) === null || _b === void 0 ? void 0 : _b.sha : null;
-        exitIfSuccessfulRunExists(commit, context);
+        if (distanceToHEAD >= 1) {
+            exitIfSuccessfulRunExists(commit, context);
+        }
         if (distanceToHEAD++ >= 50) {
             core.warning(`Aborted commit-backtracing due to bad performance - Did you push an excessive number of ignored-path-commits?`);
             return;
