@@ -135,7 +135,9 @@ async function main() {
     concurrentSkipping: getConcurrentSkippingInput("concurrent_skipping"),
   };
   } catch (e) {
-    core.warning(e);
+    if (e instanceof Error || typeof e === 'string') {
+      core.warning(e);
+    }
     core.warning(`Failed to fetch the required workflow information`);
     exitSuccess({shouldSkip: false});
   }
@@ -187,7 +189,9 @@ async function cancelWorkflowRun(run: WorkflowRun, context: WRunContext) {
     });
     core.info(`Cancelled ${run.html_url} with response code ${res.status}`);
   } catch (e) {
-    core.warning(e);
+    if (e instanceof Error || typeof e === 'string') {
+      core.warning(e);
+    }
     core.warning(`Failed to cancel ${run.html_url}`);
   }
 }
@@ -199,7 +203,7 @@ function detectSuccessfulDuplicateRuns(context: WRunContext) {
   });
   if (successfulDuplicate) {
     core.info(`Skip execution because the exact same files have been successfully checked in ${successfulDuplicate.html_url}`);
-    exitSuccess({ shouldSkip: true });
+    exitSuccess({ shouldSkip: true, successfulDuplicate: successfulDuplicate.runId });
   }
 }
 
@@ -326,14 +330,19 @@ async function fetchCommitDetails(sha: string | null, context: WRunContext): Pro
     //core.info(`Fetched ${res} with response code ${res.status}`);
     return res.data;
   } catch (e) {
-    core.warning(e);
+    if (e instanceof Error || typeof e === 'string') {
+      core.warning(e);
+    }
     core.warning(`Failed to retrieve commit ${sha}`);
     return null;
   }
 }
 
-function exitSuccess(args: { shouldSkip: boolean }): never {
+function exitSuccess(args: { shouldSkip: boolean, successfulDuplicate?: number }): never {
   core.setOutput("should_skip", args.shouldSkip);
+  if (args.successfulDuplicate) {
+    core.setOutput("successful_duplicate", args.successfulDuplicate);
+  }
   return process.exit(0) as never;
 }
 
@@ -384,7 +393,9 @@ function getStringArrayInput(name: string): string[] {
     });
     return array;
   } catch (e) {
-    core.error(e);
+    if (e instanceof Error || typeof e === 'string') {
+      core.error(e);
+    }
     logFatal(`Input '${rawInput}' is not a valid JSON`);
   }
 }
