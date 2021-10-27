@@ -2,6 +2,7 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 // eslint-disable-next-line import/named
 import {Endpoints} from '@octokit/types'
+import {GitHub} from '@actions/github/lib/utils'
 import micromatch from 'micromatch'
 
 type ActionsGetWorkflowRunResponseData =
@@ -54,8 +55,7 @@ interface WRunContext {
   currentRun: WorkflowRun
   olderRuns: WorkflowRun[]
   allRuns: WorkflowRun[]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  octokit: any
+  octokit: InstanceType<typeof GitHub>
   pathsIgnore: string[]
   paths: string[]
   doNotSkip: WRunTrigger[]
@@ -220,7 +220,7 @@ async function cancelWorkflowRun(
   context: WRunContext
 ): Promise<void> {
   try {
-    const res = await context.octokit.actions.cancelWorkflowRun({
+    const res = await context.octokit.rest.actions.cancelWorkflowRun({
       owner: context.repoOwner,
       repo: context.repoName,
       run_id: run.runId
@@ -429,7 +429,7 @@ async function fetchCommitDetails(
     return null
   }
   try {
-    const res = await context.octokit.repos.getCommit({
+    const res = await context.octokit.rest.repos.getCommit({
       owner: context.repoOwner,
       repo: context.repoName,
       ref: sha
