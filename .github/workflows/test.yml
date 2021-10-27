@@ -1,22 +1,30 @@
-on:
-  push:
+name: 'build-test'
+on: # rebuild any PRs and main branch changes
   pull_request:
-  workflow_dispatch:
-  schedule:
-    - cron:  '0 12 18 * *'
+  push:
+    branches:
+      - main
+      - 'releases/*'
 
 jobs:
-  pre_job:
-    # continue-on-error: true # Uncomment once integration is finished
+  build: # make sure build/ci work properly
     runs-on: ubuntu-latest
-    # Map a step output to a job output
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+          npm install
+      - run: |
+          npm run all
+
+  pre_job: # make sure the action works on a clean machine without building
+    runs-on: ubuntu-latest
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
     steps:
-      - id: skip_check
-        uses: fkirc/skip-duplicate-actions@master
+      - uses: actions/checkout@v2
+      - uses: ./
+        id: skip_check
         with:
-          # All of these options are optional, so you can remove them if you are happy with the defaults
           concurrent_skipping: 'never'
           skip_after_successful_duplicate: 'true'
           paths_ignore: '["**/README.md", "**/docs/**"]'
@@ -29,12 +37,12 @@ jobs:
     steps:
       - run: echo "Running slow tests..." && sleep 30
 
-
   skip_individual_steps_job:
     runs-on: ubuntu-latest
     steps:
-      - id: skip_check
-        uses: fkirc/skip-duplicate-actions@master
+      - uses: actions/checkout@v2
+      - uses: ./
+        id: skip_check
         with:
           cancel_others: 'false'
           paths: '["src/**", "dist/**"]'
@@ -43,16 +51,12 @@ jobs:
           echo "Run only if src/ or dist/ changed..." && sleep 30
           echo "Do other stuff..."
 
-
-
   private_action:
     runs-on: ubuntu-latest
     steps:
-      # To use the Action from the current branch, we checkout the repository
-      - name: Checkout
-        uses: actions/checkout@v2
-      - id: skip_check
-        uses: ./ # Uses this Action in the root directory
+      - uses: actions/checkout@v2
+      - uses: ./
+        id: skip_check
         with:
           github_token: ${{ github.token }}
           paths_ignore: '["**/*.md"]'
