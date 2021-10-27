@@ -190,7 +190,7 @@ function cancelOutdatedRuns(context) {
 function cancelWorkflowRun(run, context) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const res = yield context.octokit.actions.cancelWorkflowRun({
+            const res = yield context.octokit.rest.actions.cancelWorkflowRun({
                 owner: context.repoOwner,
                 repo: context.repoName,
                 run_id: run.runId
@@ -344,7 +344,7 @@ function fetchCommitDetails(sha, context) {
             return null;
         }
         try {
-            const res = yield context.octokit.repos.getCommit({
+            const res = yield context.octokit.rest.repos.getCommit({
                 owner: context.repoOwner,
                 repo: context.repoName,
                 ref: sha
