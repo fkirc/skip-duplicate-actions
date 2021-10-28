@@ -245,7 +245,7 @@ function detectSuccessfulDuplicateRuns(context: WRunContext): void {
     core.info(
       `Skip execution because the exact same files have been successfully checked in ${successfulDuplicate.html_url}`
     )
-    exitSuccess({shouldSkip: true, successfulDuplicate})
+    exitSuccess({shouldSkip: true, skippedBy: successfulDuplicate})
   }
 }
 
@@ -278,7 +278,7 @@ function detectConcurrentRuns(context: WRunContext): void {
       core.info(
         `Skip execution because a newer instance of the same workflow is running in ${newerRun.html_url}`
       )
-      exitSuccess({shouldSkip: true})
+      exitSuccess({shouldSkip: true, skippedBy: newerRun})
     }
   } else if (context.concurrentSkipping === 'same_content') {
     const concurrentDuplicate = concurrentRuns.find(
@@ -288,7 +288,7 @@ function detectConcurrentRuns(context: WRunContext): void {
       core.info(
         `Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`
       )
-      exitSuccess({shouldSkip: true})
+      exitSuccess({shouldSkip: true, skippedBy: concurrentDuplicate})
     }
   } else if (context.concurrentSkipping === 'same_content_newer') {
     const concurrentIsOlder = concurrentRuns.find(
@@ -300,7 +300,7 @@ function detectConcurrentRuns(context: WRunContext): void {
       core.info(
         `Skip execution because the exact same files are concurrently checked in older ${concurrentIsOlder.html_url}`
       )
-      exitSuccess({shouldSkip: true})
+      exitSuccess({shouldSkip: true, skippedBy: concurrentIsOlder})
     }
   }
   core.info(`Did not find any skippable concurrent workflow-runs`)
@@ -346,7 +346,7 @@ function exitIfSuccessfulRunExists(
     core.info(
       `Skip execution because all changes since ${successfulRun.html_url} are in ignored or skipped paths`
     )
-    exitSuccess({shouldSkip: true})
+    exitSuccess({shouldSkip: true, skippedBy: successfulRun})
   }
 }
 
@@ -446,10 +446,10 @@ async function fetchCommitDetails(
 
 function exitSuccess(args: {
   shouldSkip: boolean
-  successfulDuplicate?: WorkflowRun
+  skippedBy?: WorkflowRun
 }): never {
   core.setOutput('should_skip', args.shouldSkip)
-  core.setOutput('successful_duplicate', args.successfulDuplicate)
+  core.setOutput('skipped_by', args.skippedBy)
   return process.exit(0)
 }
 
