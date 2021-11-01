@@ -103,7 +103,7 @@ One of `never`, `same_content`, `same_content_newer`, `outdated_runs`, `always`.
 
 ### `should_skip`
 
-true if the current run should be skipped according to your configured rules. This should be evaluated for either individual steps or entire jobs.
+Returns true if the current run should be skipped according to your configured rules. This should be evaluated for either individual steps or entire jobs.
 
 ### `successful_duplicate`
 
