@@ -1,6 +1,6 @@
 name: 'Skip Duplicate Actions'
 description: 'Skip duplicate workflow-runs. Skip or ignore specific paths. Cancel outdated workflow-runs.'
-author: fkirc
+author: 'fkirc'
 branding:
   icon: 'stop-circle'
   color: 'white'
@@ -33,10 +33,9 @@ inputs:
     description: 'One of never, same_content, same_content_newer, outdated_runs, always'
     required: true
     default: 'never'
-
 outputs:
   should_skip:
-    description: 'true if the current run can be safely skipped. This should be evaluated for either individual steps or entire jobs.'
+    description: 'Returns true if the current run should be skipped according to your configured rules. This should be evaluated for either individual steps or entire jobs.'
 runs:
   using: 'node12'
   main: 'dist/index.js'
