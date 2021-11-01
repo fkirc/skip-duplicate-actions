@@ -10,7 +10,7 @@
     "@actions/core": "^1.2.6",
     "@actions/github": "^4.0.0",
     "@vercel/ncc": "^0.24.1",
-    "micromatch": "^4.0.2"
+    "micromatch": "^4.0.4"
   },
   "devDependencies": {
     "typescript": "^4.1.3"
