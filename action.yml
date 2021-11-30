@@ -48,7 +48,7 @@ outputs:
   skipped_by:
     description: 'Information about the workflow run which caused the current run to be skipped. Returns information only when current run is considered skippable.'
   changed_files:
-    description: 'A multidimensional array, with a list of changed files for each commit that was traced back. Returns information only if one of the options 0paths_ignore", "paths" or "paths_filter" is set.'
+    description: 'A two-dimensional array, with a list of changed files for each commit that was traced back. Returns information only if one of the options "paths_ignore", "paths" or "paths_filter" is set.'
   paths_result:
     description: 'Returns an object with information like "should_skip" for each named "paths_filter".'
 runs:
