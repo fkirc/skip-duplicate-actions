@@ -407,7 +407,7 @@ async function backtracePathSkipping(
       // Only process paths where status is not determined yet.
       if (values.should_skip !== 'unknown') continue
 
-      // Skip if paths were ignorable or skippable until now and there is a successful run on this commit.
+      // Skip if paths were ignorable or skippable until now and there is a successful run on the current commit.
       if (successfulRun) {
         pathsResult[name].should_skip = true
         pathsResult[name].skipped_by = successfulRun
@@ -418,15 +418,13 @@ async function backtracePathSkipping(
         continue
       }
 
+      // Check if backtracking limit has been reached.
       if (
         (pathsFilter[name].backtracking === false && distanceToHEAD === 1) ||
         pathsFilter[name].backtracking === distanceToHEAD
       ) {
-        pathsResult[name].should_skip = true
+        pathsResult[name].should_skip = false
         pathsResult[name].backtrack_count = distanceToHEAD
-        core.info(
-          `Aborted backtracking for '${name}' since the defined limit has been reached`
-        )
         core.info(
           `Stop backtracking for '${name}' because the defined limit has been reached`
         )
@@ -457,7 +455,7 @@ async function backtracePathSkipping(
         }
       }
 
-      // Not ignorable or skippable
+      // Not ignorable or skippable.
       pathsResult[name].should_skip = false
       pathsResult[name].backtrack_count = distanceToHEAD
       core.info(
