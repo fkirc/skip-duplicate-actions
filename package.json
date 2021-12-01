@@ -24,7 +24,7 @@
     "@types/micromatch": "^4.0.2",
     "@types/node": "^16.10.5",
     "@typescript-eslint/eslint-plugin": "^5.2.0",
-    "@typescript-eslint/parser": "^5.0.0",
+    "@typescript-eslint/parser": "^5.5.0",
     "@vercel/ncc": "^0.31.1",
     "eslint": "^8.1.0",
     "eslint-plugin-github": "^4.3.2",
