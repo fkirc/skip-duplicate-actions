@@ -120,6 +120,11 @@ To skip entire jobs, you should add a `pre_job` that acts as a pre-condition for
 Although this example looks like a lot of code, there are only two additional lines in your project-specific `main_job` (the `needs`-clause and the `if`-clause):
 
 ```yml
+permissions:
+  # Minimum permissions required by skip-duplicate-actions
+  actions: write
+  contents: read
+
 jobs:
   pre_job:
     # continue-on-error: true # Uncomment once integration is finished
@@ -152,6 +157,11 @@ In this example, the step will be skipped if no files in `src/` or `dist/` were 
 
 ```yml
 jobs:
+  permissions:
+    # Minimum permissions required by skip-duplicate-actions
+    actions: write
+    contents: read
+
   skip_individual_steps_job:
     runs-on: ubuntu-latest
     steps:
