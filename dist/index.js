@@ -52,7 +52,7 @@ function getConcurrentSkippingOptions() {
     return Object.keys(concurrentSkippingMap);
 }
 function parseWorkflowRun(run) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d;
     const treeHash = (_a = run.head_commit) === null || _a === void 0 ? void 0 : _a.tree_id;
     if (!treeHash) {
         logFatal(`Could not find the tree hash of run ${run}`);
@@ -69,6 +69,7 @@ function parseWorkflowRun(run) {
         conclusion: (_b = run.conclusion) !== null && _b !== void 0 ? _b : null,
         html_url: run.html_url,
         branch: (_c = run.head_branch) !== null && _c !== void 0 ? _c : null,
+        repo: (_d = run.head_repository.full_name) !== null && _d !== void 0 ? _d : null,
         runId: run.id,
         workflowId,
         createdAt: run.created_at,
@@ -177,7 +178,7 @@ function cancelOutdatedRuns(context) {
             if (run.status === 'completed') {
                 return false;
             }
-            return (run.treeHash !== currentRun.treeHash && run.branch === currentRun.branch);
+            return (run.treeHash !== currentRun.treeHash && run.branch === currentRun.branch && run.repo === currentRun.repo);
         });
         if (!cancelVictims.length) {
             return core.info(`Did not find other workflow-runs to be cancelled`);
