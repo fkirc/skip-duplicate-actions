@@ -41,6 +41,7 @@ interface WorkflowRun {
   conclusion: WorkflowRunConclusion | null
   html_url: string
   branch: string | null
+  repo: string | null
   runId: number
   workflowId: number
   createdAt: string
@@ -79,6 +80,7 @@ function parseWorkflowRun(run: ActionsGetWorkflowRunResponseData): WorkflowRun {
     conclusion: (run.conclusion as WorkflowRunConclusion) ?? null,
     html_url: run.html_url,
     branch: run.head_branch ?? null,
+    repo: run.head_repository.full_name ?? null,
     runId: run.id,
     workflowId,
     createdAt: run.created_at,
@@ -204,7 +206,7 @@ async function cancelOutdatedRuns(context: WRunContext): Promise<void> {
       return false
     }
     return (
-      run.treeHash !== currentRun.treeHash && run.branch === currentRun.branch
+      run.treeHash !== currentRun.treeHash && run.branch === currentRun.branch && run.repo === currentRun.repo
     )
   })
   if (!cancelVictims.length) {
