@@ -42,6 +42,7 @@ interface WorkflowRun {
   conclusion: WorkflowRunConclusion | null
   html_url: string
   branch: string | null
+  repo: string | null
   runId: number
   workflowId: number
   createdAt: string
@@ -83,11 +84,15 @@ type PathsResult = Record<string, PathsResultEntry>
 function parseWorkflowRun(run: ActionsGetWorkflowRunResponseData): WorkflowRun {
   const treeHash = run.head_commit?.tree_id
   if (!treeHash) {
-    logFatal(`Could not find the tree hash of run ${run}`)
+    logFatal(`
+      Could not find the tree hash of run ${run.id} (workflow: $ {run.workflow_id},
+      name: ${run.name}, head_branch: ${run.head_branch}, head_sha: ${run.head_sha}).
+      You might have a run associated with a headless or removed commit.
+    `)
   }
   const workflowId = run.workflow_id
   if (!workflowId) {
-    logFatal(`Could not find the workflow id of run ${run}`)
+    logFatal(`Could not find the workflow id of run ${run.id}`)
   }
   return {
     event: run.event as WRunTrigger,
@@ -97,6 +102,7 @@ function parseWorkflowRun(run: ActionsGetWorkflowRunResponseData): WorkflowRun {
     conclusion: (run.conclusion as WorkflowRunConclusion) ?? null,
     html_url: run.html_url,
     branch: run.head_branch ?? null,
+    repo: run.head_repository.full_name ?? null,
     runId: run.id,
     workflowId,
     createdAt: run.created_at,
@@ -107,7 +113,9 @@ function parseWorkflowRun(run: ActionsGetWorkflowRunResponseData): WorkflowRun {
 function parseAllRuns(
   response: ActionsListWorkflowRunsResponseData
 ): WorkflowRun[] {
-  return response.workflow_runs.map(run => parseWorkflowRun(run))
+  return response.workflow_runs
+    .filter(run => run.head_commit && run.workflow_id)
+    .map(run => parseWorkflowRun(run))
 }
 
 function parseOlderRuns(
@@ -121,7 +129,9 @@ function parseOlderRuns(
       new Date(currentRun.createdAt).getTime()
     )
   })
-  return olderRuns.map(run => parseWorkflowRun(run))
+  return olderRuns
+    .filter(run => run.head_commit && run.workflow_id)
+    .map(run => parseWorkflowRun(run))
 }
 
 async function main(): Promise<void> {
@@ -263,7 +273,7 @@ async function cancelOutdatedRuns(context: WRunContext): Promise<void> {
       return false
     }
     return (
-      run.treeHash !== currentRun.treeHash && run.branch === currentRun.branch
+      run.treeHash !== currentRun.treeHash && run.branch === currentRun.branch && run.repo === currentRun.repo
     )
   })
   if (!cancelVictims.length) {

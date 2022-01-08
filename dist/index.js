@@ -53,14 +53,18 @@ function getConcurrentSkippingOptions() {
     return Object.keys(concurrentSkippingMap);
 }
 function parseWorkflowRun(run) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d;
     const treeHash = (_a = run.head_commit) === null || _a === void 0 ? void 0 : _a.tree_id;
     if (!treeHash) {
-        logFatal(`Could not find the tree hash of run ${run}`);
+        logFatal(`
+      Could not find the tree hash of run ${run.id} (workflow: $ {run.workflow_id},
+      name: ${run.name}, head_branch: ${run.head_branch}, head_sha: ${run.head_sha}).
+      You might have a run associated with a headless or removed commit.
+    `);
     }
     const workflowId = run.workflow_id;
     if (!workflowId) {
-        logFatal(`Could not find the workflow id of run ${run}`);
+        logFatal(`Could not find the workflow id of run ${run.id}`);
     }
     return {
         event: run.event,
@@ -70,6 +74,7 @@ function parseWorkflowRun(run) {
         conclusion: (_b = run.conclusion) !== null && _b !== void 0 ? _b : null,
         html_url: run.html_url,
         branch: (_c = run.head_branch) !== null && _c !== void 0 ? _c : null,
+        repo: (_d = run.head_repository.full_name) !== null && _d !== void 0 ? _d : null,
         runId: run.id,
         workflowId,
         createdAt: run.created_at,
@@ -77,7 +82,9 @@ function parseWorkflowRun(run) {
     };
 }
 function parseAllRuns(response) {
-    return response.workflow_runs.map(run => parseWorkflowRun(run));
+    return response.workflow_runs
+        .filter(run => run.head_commit && run.workflow_id)
+        .map(run => parseWorkflowRun(run));
 }
 function parseOlderRuns(response, currentRun) {
     const olderRuns = response.workflow_runs.filter(run => {
@@ -85,7 +92,9 @@ function parseOlderRuns(response, currentRun) {
         return (new Date(run.created_at).getTime() <
             new Date(currentRun.createdAt).getTime());
     });
-    return olderRuns.map(run => parseWorkflowRun(run));
+    return olderRuns
+        .filter(run => run.head_commit && run.workflow_id)
+        .map(run => parseWorkflowRun(run));
 }
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -214,7 +223,7 @@ function cancelOutdatedRuns(context) {
             if (run.status === 'completed') {
                 return false;
             }
-            return (run.treeHash !== currentRun.treeHash && run.branch === currentRun.branch);
+            return (run.treeHash !== currentRun.treeHash && run.branch === currentRun.branch && run.repo === currentRun.repo);
         });
         if (!cancelVictims.length) {
             return core.info(`Did not find other workflow-runs to be cancelled`);
