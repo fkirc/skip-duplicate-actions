@@ -66,11 +66,15 @@ interface WRunContext {
 function parseWorkflowRun(run: ActionsGetWorkflowRunResponseData): WorkflowRun {
   const treeHash = run.head_commit?.tree_id
   if (!treeHash) {
-    logFatal(`Could not find the tree hash of run ${run}`)
+    logFatal(`
+      Could not find the tree hash of run ${run.id} (workflow: $ {run.workflow_id},
+      name: ${run.name}, head_branch: ${run.head_branch}, head_sha: ${run.head_sha}).
+      You might have a run associated with a headless or removed commit.
+    `)
   }
   const workflowId = run.workflow_id
   if (!workflowId) {
-    logFatal(`Could not find the workflow id of run ${run}`)
+    logFatal(`Could not find the workflow id of run ${run.id}`)
   }
   return {
     event: run.event as WRunTrigger,
@@ -91,7 +95,9 @@ function parseWorkflowRun(run: ActionsGetWorkflowRunResponseData): WorkflowRun {
 function parseAllRuns(
   response: ActionsListWorkflowRunsResponseData
 ): WorkflowRun[] {
-  return response.workflow_runs.map(run => parseWorkflowRun(run))
+  return response.workflow_runs
+    .filter(run => run.head_commit && run.workflow_id)
+    .map(run => parseWorkflowRun(run))
 }
 
 function parseOlderRuns(
@@ -105,7 +111,9 @@ function parseOlderRuns(
       new Date(currentRun.createdAt).getTime()
     )
   })
-  return olderRuns.map(run => parseWorkflowRun(run))
+  return olderRuns
+    .filter(run => run.head_commit && run.workflow_id)
+    .map(run => parseWorkflowRun(run))
 }
 
 async function main(): Promise<void> {
