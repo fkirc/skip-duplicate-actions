@@ -156,12 +156,11 @@ In this example, the step will be skipped if no files in `src/` or `dist/` were 
 
 ```yml
 jobs:
-  permissions:
-    # Minimum permissions required by skip-duplicate-actions
-    actions: write
-    contents: read
-
   skip_individual_steps_job:
+    permissions:
+      # Minimum permissions required by skip-duplicate-actions
+      actions: write
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - id: skip_check
