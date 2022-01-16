@@ -39,5 +39,5 @@ outputs:
   skipped_by:
     description: 'Information about the workflow run which caused the current run to be skipped.'
 runs:
-  using: 'node12'
+  using: 'node16'
   main: 'dist/index.js'
