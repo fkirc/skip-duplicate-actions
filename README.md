@@ -71,17 +71,27 @@ Therefore, when you push changes to a branch, `skip-duplicate-actions` can be co
 
 ### `paths_ignore`
 
-A JSON-array with ignored path-patterns, e.g. something like `'["**/README.md", "**/docs/**"]'`.
+A JSON-array with ignored path patterns, e.g. something like `["**/README.md", "**/docs/**"]`.
 See [cheat sheet](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#filter-pattern-cheat-sheet) for path-pattern examples.
 See [micromatch](https://github.com/micromatch/micromatch) for details about supported path-patterns.
 Default `[]`.
 
 ### `paths`
 
-A JSON-array with path-patterns, e.g. something like `'["platform-specific/**"]'`.
+A JSON-array with path patterns, e.g. something like `["platform-specific/**"]`.
 If this is non-empty, then `skip-duplicate-actions` will try to skip commits that did not change any of those paths.
 It uses the same syntax as `paths_ignore`.
 Default `[]`.
+
+### `paths_filter`
+
+A YAML-string with named paths_ignore/paths patterns, e.g. something like:
+
+```yaml
+app:
+  paths:
+    - 'app/**/*'
+```
 
 ### `cancel_others`
 
@@ -93,7 +103,7 @@ If true, skip if an already finished duplicate run can be found. Default `true`.
 
 ### `do_not_skip`
 
-A JSON-array with triggers that should never be skipped. Default `'["workflow_dispatch", "schedule"]'`.
+A JSON-array with triggers that should never be skipped. Default `["workflow_dispatch", "schedule"]`.
 
 ### `concurrent_skipping`
 
@@ -101,17 +111,25 @@ One of `never`, `same_content`, `same_content_newer`, `outdated_runs`, `always`.
 
 ## Outputs
 
-### `should_skip`
+### `should_skip` (string)
 
 Returns true if the current run should be skipped according to your configured rules. This should be evaluated for either individual steps or entire jobs.
 
-### `reason`
+### `reason` (string)
 
-The reason why the current run is considered skippable or unskippable. Corresponds approximately to the input options, for example `skip_after_successful_duplicate`.
+The reason why the current run is considered skippable or unskippable. Corresponds approximately to the input options, e.g. `skip_after_successful_duplicate`.
 
-### `skipped_by`
+### `skipped_by` (object)
 
-Information about the workflow run which caused the current run to be skipped. Returns information only when current run is considered skippable.
+Returns information about the workflow run which caused the current run to be skipped. Returns information only when current run is considered skippable.
+
+### `changed_files` (array)
+
+A two-dimensional array, with a list of changed files for each commit that was traced back. Returns information only if one of the options `paths_ignore`, `paths` or `paths_filter` is set.
+
+### `paths_result` (object)
+
+Returns information for each configured filter in `paths_filter`.
 
 ## Usage examples
 
