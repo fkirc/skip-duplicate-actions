@@ -186,7 +186,9 @@ function cancelOutdatedRuns(context) {
             if (run.status === 'completed') {
                 return false;
             }
-            return (run.treeHash !== currentRun.treeHash && run.branch === currentRun.branch && run.repo === currentRun.repo);
+            return (run.treeHash !== currentRun.treeHash &&
+                run.branch === currentRun.branch &&
+                run.repo === currentRun.repo);
         });
         if (!cancelVictims.length) {
             return core.info(`Did not find other workflow-runs to be cancelled`);
