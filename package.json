@@ -4,8 +4,8 @@
   "main": "lib/main.js",
   "scripts": {
     "build": "tsc",
-    "format": "prettier --write '**/*.ts'",
-    "format-check": "prettier --check '**/*.ts'",
+    "format": "prettier --write 'src/**/*.ts'",
+    "format-check": "prettier --check 'src/**/*.ts'",
     "lint": "eslint src/**/*.ts",
     "package": "ncc build",
     "all": "npm run build && npm run format && npm run lint && npm run package"
@@ -22,13 +22,13 @@
   },
   "devDependencies": {
     "@types/micromatch": "^4.0.2",
-    "@types/node": "^16.10.5",
+    "@types/node": "^17.0.8",
     "@typescript-eslint/eslint-plugin": "^5.2.0",
     "@typescript-eslint/parser": "^5.0.0",
-    "@vercel/ncc": "^0.31.1",
+    "@vercel/ncc": "^0.33.1",
     "eslint": "^8.1.0",
     "eslint-plugin-github": "^4.3.2",
-    "prettier": "2.4.1",
+    "prettier": "^2.5.1",
     "typescript": "^4.4.4"
   }
 }

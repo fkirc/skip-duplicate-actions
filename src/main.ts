@@ -214,7 +214,9 @@ async function cancelOutdatedRuns(context: WRunContext): Promise<void> {
       return false
     }
     return (
-      run.treeHash !== currentRun.treeHash && run.branch === currentRun.branch && run.repo === currentRun.repo
+      run.treeHash !== currentRun.treeHash &&
+      run.branch === currentRun.branch &&
+      run.repo === currentRun.repo
     )
   })
   if (!cancelVictims.length) {
