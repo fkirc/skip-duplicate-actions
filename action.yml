@@ -17,6 +17,13 @@ inputs:
     description: 'A JSON-array with path patterns, e.g. something like ["platform-specific/**"]'
     required: false
     default: '[]'
+paths_filter:
+    description: |
+      A YAML-string with named paths_ignore/paths patterns, e.g.
+      app:
+        paths:
+          - 'app/**/*'
+    required: false
   cancel_others:
     description: 'If true, then workflow-runs from outdated commits will be cancelled'
     required: false
@@ -37,9 +44,14 @@ outputs:
   should_skip:
     description: 'Returns true if the current run should be skipped according to your configured rules. This should be evaluated for either individual steps or entire jobs.'
   reason:
-    description: 'The reason why the current run is considered skippable or unskippable. Corresponds approximately to the input options, for example `skip_after_successful_duplicate`.'
+    description: 'The reason why the current run is considered skippable or unskippable. Corresponds approximately to the input options, e.g. "skip_after_successful_duplicate".'
   skipped_by:
     description: 'Information about the workflow run which caused the current run to be skipped.'
+changed_files:
+    description: 'A two-dimensional array, with a list of changed files for each commit that was traced back. Returns information only if one of the options "p
+aths_ignore", "paths" or "paths_filter" is set.'
+paths_result:
+    description: 'Returns an object with information for each configured filter in "paths_filter".'
 runs:
   using: 'node16'
   main: 'dist/index.js'
