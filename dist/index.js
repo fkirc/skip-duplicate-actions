@@ -147,8 +147,11 @@ function main() {
                 if (e instanceof Error || typeof e === 'string') {
                     core.warning(e);
                 }
-                core.warning(`Failed to fetch the required workflow information`);
-                exitSuccess({ shouldSkip: false });
+                core.warning('Failed to fetch the required workflow information');
+                exitSuccess({
+                    shouldSkip: false,
+                    reason: 'no_workflow_information'
+                });
             }
             const cancelOthers = getBooleanInput('cancel_others', false);
             if (cancelOthers) {
@@ -156,20 +159,41 @@ function main() {
             }
             if (context.doNotSkip.includes(context.currentRun.event)) {
                 core.info(`Do not skip execution because the workflow was triggered with '${context.currentRun.event}'`);
-                exitSuccess({ shouldSkip: false });
+                exitSuccess({
+                    shouldSkip: false,
+                    reason: 'do_not_skip'
+                });
             }
             const skipAfterSuccessfulDuplicates = getBooleanInput('skip_after_successful_duplicate', true);
             if (skipAfterSuccessfulDuplicates) {
-                detectSuccessfulDuplicateRuns(context);
+                const successfulDuplicateRun = detectSuccessfulDuplicateRuns(context);
+                if (successfulDuplicateRun) {
+                    core.info(`Skip execution because the exact same files have been successfully checked in ${successfulDuplicateRun.html_url}`);
+                    exitSuccess({
+                        shouldSkip: true,
+                        reason: 'skip_after_successful_duplicate',
+                        skippedBy: successfulDuplicateRun
+                    });
+                }
             }
             if (context.concurrentSkipping !== 'never') {
-                detectConcurrentRuns(context);
+                const concurrentRun = detectConcurrentRuns(context);
+                if (concurrentRun) {
+                    exitSuccess({
+                        shouldSkip: true,
+                        reason: 'concurrent_skipping',
+                        skippedBy: concurrentRun
+                    });
+                }
             }
             if (context.paths.length >= 1 || context.pathsIgnore.length >= 1) {
                 yield backtracePathSkipping(context);
             }
             core.info('Do not skip execution because we did not find a transferable run');
-            exitSuccess({ shouldSkip: false });
+            exitSuccess({
+                shouldSkip: false,
+                reason: 'no_transferable_run'
+            });
         }
         catch (e) {
             if (e instanceof Error) {
@@ -191,7 +215,7 @@ function cancelOutdatedRuns(context) {
                 run.repo === currentRun.repo);
         });
         if (!cancelVictims.length) {
-            return core.info(`Did not find other workflow-runs to be cancelled`);
+            return core.info('Did not find other workflow-runs to be cancelled');
         }
         for (const victim of cancelVictims) {
             yield cancelWorkflowRun(victim, context);
@@ -221,10 +245,7 @@ function detectSuccessfulDuplicateRuns(context) {
     const successfulDuplicate = duplicateRuns.find(run => {
         return run.status === 'completed' && run.conclusion === 'success';
     });
-    if (successfulDuplicate) {
-        core.info(`Skip execution because the exact same files have been successfully checked in ${successfulDuplicate.html_url}`);
-        exitSuccess({ shouldSkip: true, skippedBy: successfulDuplicate });
-    }
+    return successfulDuplicate;
 }
 function detectConcurrentRuns(context) {
     const concurrentRuns = context.allRuns.filter(run => {
@@ -242,21 +263,21 @@ function detectConcurrentRuns(context) {
     }
     if (context.concurrentSkipping === 'always') {
         core.info(`Skip execution because another instance of the same workflow is already running in ${concurrentRuns[0].html_url}`);
-        exitSuccess({ shouldSkip: true, skippedBy: concurrentRuns[0] });
+        return concurrentRuns[0];
     }
     else if (context.concurrentSkipping === 'outdated_runs') {
         const newerRun = concurrentRuns.find(run => new Date(run.createdAt).getTime() >
             new Date(context.currentRun.createdAt).getTime());
         if (newerRun) {
             core.info(`Skip execution because a newer instance of the same workflow is running in ${newerRun.html_url}`);
-            exitSuccess({ shouldSkip: true, skippedBy: newerRun });
+            return newerRun;
         }
     }
     else if (context.concurrentSkipping === 'same_content') {
         const concurrentDuplicate = concurrentRuns.find(run => run.treeHash === context.currentRun.treeHash);
         if (concurrentDuplicate) {
             core.info(`Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`);
-            exitSuccess({ shouldSkip: true, skippedBy: concurrentDuplicate });
+            return concurrentDuplicate;
         }
     }
     else if (context.concurrentSkipping === 'same_content_newer') {
@@ -264,10 +285,10 @@ function detectConcurrentRuns(context) {
             run.runNumber < context.currentRun.runNumber);
         if (concurrentIsOlder) {
             core.info(`Skip execution because the exact same files are concurrently checked in older ${concurrentIsOlder.html_url}`);
-            exitSuccess({ shouldSkip: true, skippedBy: concurrentIsOlder });
+            return concurrentIsOlder;
         }
     }
-    core.info(`Did not find any skippable concurrent workflow-runs`);
+    core.info(`Did not find any concurrent workflow-runs that justify skipping`);
 }
 function backtracePathSkipping(context) {
     var _a, _b;
@@ -300,7 +321,7 @@ function exitIfSuccessfulRunExists(commit, context) {
     });
     if (successfulRun) {
         core.info(`Skip execution because all changes since ${successfulRun.html_url} are in ignored or skipped paths`);
-        exitSuccess({ shouldSkip: true, skippedBy: successfulRun });
+        exitSuccess({ shouldSkip: true, reason: 'paths', skippedBy: successfulRun });
     }
 }
 function isCommitSkippable(commit, context) {
@@ -317,7 +338,7 @@ function isCommitSkippable(commit, context) {
     return false;
 }
 const globOptions = {
-    dot: true // Match dotfiles. Otherwise dotfiles are ignored unless a . is explicitly defined in the pattern.
+    dot: true // Match dotfiles. Otherwise dotfiles are ignored unless a "." is explicitly defined in the pattern.
 };
 function isCommitPathIgnored(commit, context) {
     if (!context.pathsIgnore.length) {
@@ -373,7 +394,8 @@ function fetchCommitDetails(sha, context) {
 }
 function exitSuccess(args) {
     core.setOutput('should_skip', args.shouldSkip);
-    core.setOutput('skipped_by', args.skippedBy);
+    core.setOutput('reason', args.reason);
+    core.setOutput('skipped_by', args.skippedBy || {});
     return process.exit(0);
 }
 function formatCliOptions(options) {
