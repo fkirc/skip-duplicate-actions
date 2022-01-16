@@ -105,9 +105,13 @@ One of `never`, `same_content`, `same_content_newer`, `outdated_runs`, `always`.
 
 Returns true if the current run should be skipped according to your configured rules. This should be evaluated for either individual steps or entire jobs.
 
+### `reason`
+
+The reason why the current run is considered skippable or unskippable. Corresponds approximately to the input options, for example `skip_after_successful_duplicate`.
+
 ### `skipped_by`
 
-Information about the workflow run which caused the current run to be skipped.
+Information about the workflow run which caused the current run to be skipped. Returns information only when current run is considered skippable.
 
 ## Usage examples
 

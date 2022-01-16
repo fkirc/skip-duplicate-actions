@@ -168,8 +168,11 @@ async function main(): Promise<void> {
       if (e instanceof Error || typeof e === 'string') {
         core.warning(e)
       }
-      core.warning(`Failed to fetch the required workflow information`)
-      exitSuccess({shouldSkip: false})
+      core.warning('Failed to fetch the required workflow information')
+      exitSuccess({
+        shouldSkip: false,
+        reason: 'no_workflow_information'
+      })
     }
 
     const cancelOthers = getBooleanInput('cancel_others', false)
@@ -180,17 +183,37 @@ async function main(): Promise<void> {
       core.info(
         `Do not skip execution because the workflow was triggered with '${context.currentRun.event}'`
       )
-      exitSuccess({shouldSkip: false})
+      exitSuccess({
+        shouldSkip: false,
+        reason: 'do_not_skip'
+      })
     }
     const skipAfterSuccessfulDuplicates = getBooleanInput(
       'skip_after_successful_duplicate',
       true
     )
     if (skipAfterSuccessfulDuplicates) {
-      detectSuccessfulDuplicateRuns(context)
+      const successfulDuplicateRun = detectSuccessfulDuplicateRuns(context)
+      if (successfulDuplicateRun) {
+        core.info(
+          `Skip execution because the exact same files have been successfully checked in ${successfulDuplicateRun.html_url}`
+        )
+        exitSuccess({
+          shouldSkip: true,
+          reason: 'skip_after_successful_duplicate',
+          skippedBy: successfulDuplicateRun
+        })
+      }
     }
     if (context.concurrentSkipping !== 'never') {
-      detectConcurrentRuns(context)
+      const concurrentRun = detectConcurrentRuns(context)
+      if (concurrentRun) {
+        exitSuccess({
+          shouldSkip: true,
+          reason: 'concurrent_skipping',
+          skippedBy: concurrentRun
+        })
+      }
     }
     if (context.paths.length >= 1 || context.pathsIgnore.length >= 1) {
       await backtracePathSkipping(context)
@@ -198,7 +221,10 @@ async function main(): Promise<void> {
     core.info(
       'Do not skip execution because we did not find a transferable run'
     )
-    exitSuccess({shouldSkip: false})
+    exitSuccess({
+      shouldSkip: false,
+      reason: 'no_transferable_run'
+    })
   } catch (e) {
     if (e instanceof Error) {
       core.error(e)
@@ -220,7 +246,7 @@ async function cancelOutdatedRuns(context: WRunContext): Promise<void> {
     )
   })
   if (!cancelVictims.length) {
-    return core.info(`Did not find other workflow-runs to be cancelled`)
+    return core.info('Did not find other workflow-runs to be cancelled')
   }
   for (const victim of cancelVictims) {
     await cancelWorkflowRun(victim, context)
@@ -246,22 +272,19 @@ async function cancelWorkflowRun(
   }
 }
 
-function detectSuccessfulDuplicateRuns(context: WRunContext): void {
+function detectSuccessfulDuplicateRuns(
+  context: WRunContext
+): WorkflowRun | undefined {
   const duplicateRuns = context.olderRuns.filter(
     run => run.treeHash === context.currentRun.treeHash
   )
   const successfulDuplicate = duplicateRuns.find(run => {
     return run.status === 'completed' && run.conclusion === 'success'
   })
-  if (successfulDuplicate) {
-    core.info(
-      `Skip execution because the exact same files have been successfully checked in ${successfulDuplicate.html_url}`
-    )
-    exitSuccess({shouldSkip: true, skippedBy: successfulDuplicate})
-  }
+  return successfulDuplicate
 }
 
-function detectConcurrentRuns(context: WRunContext): void {
+function detectConcurrentRuns(context: WRunContext): WorkflowRun | undefined {
   const concurrentRuns: WorkflowRun[] = context.allRuns.filter(run => {
     if (run.status === 'completed') {
       return false
@@ -271,6 +294,7 @@ function detectConcurrentRuns(context: WRunContext): void {
     }
     return true
   })
+
   if (!concurrentRuns.length) {
     core.info(`Did not find any concurrent workflow-runs`)
     return
@@ -279,7 +303,7 @@ function detectConcurrentRuns(context: WRunContext): void {
     core.info(
       `Skip execution because another instance of the same workflow is already running in ${concurrentRuns[0].html_url}`
     )
-    exitSuccess({shouldSkip: true, skippedBy: concurrentRuns[0]})
+    return concurrentRuns[0]
   } else if (context.concurrentSkipping === 'outdated_runs') {
     const newerRun = concurrentRuns.find(
       run =>
@@ -290,7 +314,7 @@ function detectConcurrentRuns(context: WRunContext): void {
       core.info(
         `Skip execution because a newer instance of the same workflow is running in ${newerRun.html_url}`
       )
-      exitSuccess({shouldSkip: true, skippedBy: newerRun})
+      return newerRun
     }
   } else if (context.concurrentSkipping === 'same_content') {
     const concurrentDuplicate = concurrentRuns.find(
@@ -300,7 +324,7 @@ function detectConcurrentRuns(context: WRunContext): void {
       core.info(
         `Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`
       )
-      exitSuccess({shouldSkip: true, skippedBy: concurrentDuplicate})
+      return concurrentDuplicate
     }
   } else if (context.concurrentSkipping === 'same_content_newer') {
     const concurrentIsOlder = concurrentRuns.find(
@@ -312,10 +336,10 @@ function detectConcurrentRuns(context: WRunContext): void {
       core.info(
         `Skip execution because the exact same files are concurrently checked in older ${concurrentIsOlder.html_url}`
       )
-      exitSuccess({shouldSkip: true, skippedBy: concurrentIsOlder})
+      return concurrentIsOlder
     }
   }
-  core.info(`Did not find any skippable concurrent workflow-runs`)
+  core.info(`Did not find any concurrent workflow-runs that justify skipping`)
 }
 
 async function backtracePathSkipping(context: WRunContext): Promise<void> {
@@ -358,7 +382,7 @@ function exitIfSuccessfulRunExists(
     core.info(
       `Skip execution because all changes since ${successfulRun.html_url} are in ignored or skipped paths`
     )
-    exitSuccess({shouldSkip: true, skippedBy: successfulRun})
+    exitSuccess({shouldSkip: true, reason: 'paths', skippedBy: successfulRun})
   }
 }
 
@@ -386,7 +410,7 @@ function isCommitSkippable(
 }
 
 const globOptions = {
-  dot: true // Match dotfiles. Otherwise dotfiles are ignored unless a . is explicitly defined in the pattern.
+  dot: true // Match dotfiles. Otherwise dotfiles are ignored unless a "." is explicitly defined in the pattern.
 }
 
 function isCommitPathIgnored(
@@ -458,10 +482,12 @@ async function fetchCommitDetails(
 
 function exitSuccess(args: {
   shouldSkip: boolean
+  reason: string
   skippedBy?: WorkflowRun
 }): never {
   core.setOutput('should_skip', args.shouldSkip)
-  core.setOutput('skipped_by', args.skippedBy)
+  core.setOutput('reason', args.reason)
+  core.setOutput('skipped_by', args.skippedBy || {})
   return process.exit(0)
 }
 
