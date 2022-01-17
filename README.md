@@ -47,6 +47,8 @@ However, GitHub's `paths-ignore` has some limitations:
 To overcome those limitations, `skip-duplicate-actions` provides a more flexible `paths_ignore`-feature with an efficient backtracking-algorithm.
 Instead of stupidly looking at the current commit, `paths_ignore` will look for successful checks in your commit-history.
 
+You can use the [`paths_filter` option](#paths_filter) if you need to define multiple `paths_ignore` patterns in a single workflow.
+
 ## Skip if paths not changed
 
 In some projects, there are tasks that should be only executed if specific sub-directories were changed.
@@ -58,6 +60,8 @@ However, GitHub's `paths` has some limitations:
 
 To overcome those limitations, `skip-duplicate-actions` provides a more sophisticated `paths`-feature.
 Instead of blindly skipping checks, the backtracking-algorithm will only skip something if it can find a suitable check in your commit-history.
+
+You can use the [`paths_filter` option](#paths_filter) if you need to define multiple `paths` patterns in a single workflow.
 
 ## Cancel outdated workflow-runs
 
@@ -88,10 +92,18 @@ Default `[]`.
 A YAML-string with named paths_ignore/paths patterns, e.g. something like:
 
 ```yaml
-app:
+frontend:
+  paths_ignore:
+    - 'frontend/docs/**/*'
   paths:
-    - 'app/**/*'
+    - 'frontend/**/*'
+backend:
+  paths:
+    - 'backend/**/*'
 ```
+
+Useful if you have multiple jobs in a workflow and want to skip them based on different `paths_ignore` / `paths` patterns.
+See the corresponding [`paths_result` output](#paths_result-object) and [example configuration](#example-3-skip-using-paths_filter).
 
 ### `cancel_others`
 
@@ -117,26 +129,58 @@ Returns true if the current run should be skipped according to your configured r
 
 ### `reason` (string)
 
-The reason why the current run is considered skippable or unskippable. Corresponds approximately to the input options, e.g. `skip_after_successful_duplicate`.
+The reason why the current run is considered skippable or unskippable. Corresponds approximately to the input options.
+
+- Example: `skip_after_successful_duplicate`
 
 ### `skipped_by` (object)
 
 Returns information about the workflow run which caused the current run to be skipped. Returns information only when current run is considered skippable.
 
-### `changed_files` (array)
-
-A two-dimensional array, with a list of changed files for each commit that was traced back. Returns information only if one of the options `paths_ignore`, `paths` or `paths_filter` is set.
-
 ### `paths_result` (object)
 
 Returns information for each configured filter in `paths_filter`.
+
+- Example:
+  ```json
+  {
+    "frontend": {
+      "should_skip": true,
+      "backtrack_count": 1,
+      "skipped_by": {
+        // Information about the workflow run
+      }
+    },
+    "backend": {
+      "should_skip": false,
+      "backtrack_count": 1,
+      "matched_files": ["backend/file.txt"]
+    },
+    "global": {
+      "should_skip": false,
+      "backtrack_count": 0
+    }
+  }
+  ```
+- The `global` key corresponds to the "global" `paths_ignore` and `paths` inputs, which makes it possible to profit from the information of paths_result even when only defining "global" `paths_ignore` and/or `paths` inputs.
+- A list of matched files is returned in `matched_files`, if there are any.
+- The `skipped_by` the return value behaves the same as the "global" [`skipped_by` output](#skipped_by-object).
+- The `backtrack_count` shows how many commits where traced back (skipped) until a result has been found.
+- If `skip-duplicate-actions` terminates before the paths checks are performed (for example, when a successful duplicate run has been found) `paths_result` returns an empty object (`{}`).
+
+### `changed_files` (array)
+
+A two-dimensional array, with a list of changed files for each commit that has been traced back. Returns information only if one of the options `paths_ignore`, `paths` or `paths_filter` is set.
+
+- Example: `[["some/example/file.txt", "another/example/file.txt"], ["frontend/file.txt"]]`
+- Having a two-dimensional list makes processing flexible. For example, one can flatten (and uniquify) the list to get all changed files for all commits which were traced back. Or one can use `changed_files[0]` to get the changed files in the current commit. One might also use the output of `backtrack_count` from `paths_result` to process the list of changed files.
 
 ## Usage examples
 
 You can use `skip-duplicate-actions` to either skip individual steps or entire jobs.
 To minimize changes to existing jobs, it is often easier to skip entire jobs.
 
-### Option 1: Skip entire jobs
+### Example 1: Skip entire jobs
 
 To skip entire jobs, you should add a `pre_job` that acts as a pre-condition for your `main_job`.
 Although this example looks like a lot of code, there are only two additional lines in your project-specific `main_job` (the `needs`-clause and the `if`-clause):
@@ -167,7 +211,7 @@ jobs:
       - run: echo "Running slow tests..." && sleep 30
 ```
 
-### Option 2: Skip individual steps
+### Example 2: Skip individual steps
 
 The following example demonstrates how to skip an individual step with an `if`-clause and an `id`.
 In this example, the step will be skipped if no files in `src/` or `dist/` were changed:
@@ -186,6 +230,50 @@ jobs:
         run: |
           echo "Run only if src/ or dist/ changed..." && sleep 30
           echo "Do other stuff..."
+```
+
+### Example 3: Skip using `paths_filter`
+
+The `paths_filter` option can be used if you have multiple jobs in a workflow and want to skip them based on different `paths_ignore` / `paths` patterns. When defining such filters, the action returns corresponding information in the `paths_result` output.
+For example in a monorepo, you might want to run jobs related to the "frontend" only if some files in the corresponding "frontend/" folder have changed and the same for "backend". This can be achieved with the following configuration:
+
+```yml
+jobs:
+  pre_job:
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+      paths_result: ${{ steps.skip_check.outputs.paths_result }}
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@master
+        with:
+          paths_filter: |
+            frontend:
+              paths_ignore:
+                - 'frontend/docs/**/*'
+              paths:
+                - 'frontend/**/*'
+            backend:
+              paths:
+                - 'backend/**/*'
+              ### You can also control the backtracking behavior
+              # Can be a boolean or number (default: true)
+              # 5 means to stop after having traced back 5 commits
+              # backtracking: 5
+          # Can be mixed with the "global" paths_ignore/paths options, e.g.
+          # paths_ignore: '["**/README.md"]'
+
+  frontend:
+    needs: pre_job
+    # If 'skip-duplicate-actions' terminates before the paths checks are performed (e.g., when a successful duplicate run has
+    # been found) paths_result output returns an empty object ({}). This can be easily intercepted in the if condition of a job
+    # by checking the result of the "global" should_skip output first.
+    if: needs.pre_job.outputs.should_skip != 'true' || !fromJSON(needs.pre_job.outputs.paths_result).frontend.should_skip
+    ...
+
+  backend:
+    ...
 ```
 
 ## How does it work?
