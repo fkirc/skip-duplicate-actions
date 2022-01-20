@@ -180,6 +180,8 @@ A two-dimensional array, with a list of changed files for each commit that has b
 You can use `skip-duplicate-actions` to either skip individual steps or entire jobs.
 To minimize changes to existing jobs, it is often easier to skip entire jobs.
 
+> **Note**: You may need to use [`fromJSON`](https://docs.github.com/en/actions/learn-github-actions/expressions#fromjson) to access properties of object outputs. For example, for `skipped_by.runId`, you can use the expression: `${{ fromJSON(steps.skip_check.outputs.skipped_by).runId }}`.
+
 ### Example 1: Skip entire jobs
 
 To skip entire jobs, you should add a `pre_job` that acts as a pre-condition for your `main_job`.
