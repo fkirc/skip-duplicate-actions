@@ -10,13 +10,16 @@ inputs:
     required: true
     default: ${{ github.token }}
   paths_ignore:
-    description: 'A JSON-array with ignored path patterns, e.g. something like ["**/README.md", "**/docs/**"]'
+    description: 'A JSON-array with ignored path patterns'
     required: false
     default: '[]'
   paths:
-    description: 'A JSON-array with path patterns, e.g. something like ["platform-specific/**"]'
+    description: 'A JSON-array with path patterns'
     required: false
     default: '[]'
+  paths_filter:
+    description: 'A YAML-string with named paths_ignore/paths patterns'
+    required: false
   cancel_others:
     description: 'If true, then workflow-runs from outdated commits will be cancelled'
     required: false
@@ -35,9 +38,15 @@ inputs:
     default: 'never'
 outputs:
   should_skip:
-    description: 'Returns true if the current run should be skipped according to your configured rules. This should be evaluated for either individual steps or entire jobs.'
+    description: 'Returns true if the current run should be skipped according to your configured rules'
+  reason:
+    description: 'The reason why the current run is considered skippable or unskippable'
   skipped_by:
-    description: 'Information about the workflow run which caused the current run to be skipped.'
+    description: 'Returns information about the workflow run which caused the current run to be skipped'
+  changed_files:
+    description: 'A two-dimensional array, with a list of changed files for each commit that was traced back'
+  paths_result:
+    description: 'Returns information for each configured filter in paths_filter'
 runs:
-  using: 'node12'
+  using: 'node16'
   main: 'dist/index.js'
