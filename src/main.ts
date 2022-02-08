@@ -1,7 +1,6 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-// eslint-disable-next-line import/named
-import {Endpoints} from '@octokit/types'
+import type {Endpoints} from '@octokit/types'
 import {GitHub} from '@actions/github/lib/utils'
 import micromatch from 'micromatch'
 import yaml from 'js-yaml'
