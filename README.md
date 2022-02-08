@@ -98,6 +98,7 @@ It uses the same syntax as [`paths_ignore`](#paths_ignore).
 A YAML-string with named [`paths_ignore`](#paths_ignore) / [`paths`](#paths) patterns.
 
 **Example:**
+
 ```yaml
 frontend:
   paths_ignore:
@@ -158,6 +159,7 @@ The reason why the current run is considered skippable or unskippable. Correspon
 Returns information about the workflow run which caused the current run to be skipped.
 
 **Example:**
+
 ```jsonc
 {
   "event": "pull_request",
@@ -174,6 +176,7 @@ Returns information about the workflow run which caused the current run to be sk
   "runNumber": 737
 }
 ```
+
 - Returns information only when current run is considered skippable, otherwise an empty object (`{}`) is returned.
 
 ### `paths_result`
@@ -181,6 +184,7 @@ Returns information about the workflow run which caused the current run to be sk
 Returns information for each configured filter in `paths_filter`.
 
 **Example:**
+
 ```jsonc
 {
   "frontend": {
@@ -198,6 +202,7 @@ Returns information for each configured filter in `paths_filter`.
   }
 }
 ```
+
 - The `global` key corresponds to the "global" [`paths_ignore`](#paths_ignore) and [`paths`](#paths) options.
 - A list of matched files is returned in `matched_files`, if there are any.
 - The `skipped_by` return value behaves the same as the "global" [`skipped_by`](#skipped_by) output.
@@ -206,9 +211,10 @@ Returns information for each configured filter in `paths_filter`.
 
 ### `changed_files`
 
-A two-dimensional array, with a list of changed files for each commit that has been traced back. 
+A two-dimensional array, with a list of changed files for each commit that has been traced back.
 
 **Example:** `[["some/example/file.txt", "another/example/file.txt"], ["frontend/file.txt"]]`
+
 - Having a two-dimensional list makes processing flexible. For example, one can flatten (and uniquify) the list to get changed files from all commits which were traced back. Or one can use `changed_files[0]` to get changed files from the latest commit. One might also use the output of `backtrack_count` from [`paths_result`](#paths_result) to process the list of changed files.
 - Returns information only if one of the options [`paths_ignore`](#paths_ignore), [`paths`](#paths), [`paths_filter`](#paths_filter) is set.
 - If `skip-duplicate-actions` terminates before the paths checks are performed (for example, when a successful duplicate run has been found) an empty array (`[]`) is returned.
@@ -218,7 +224,16 @@ A two-dimensional array, with a list of changed files for each commit that has b
 You can use `skip-duplicate-actions` to either skip individual steps or entire jobs.
 To minimize changes to existing jobs, it is often easier to skip entire jobs.
 
-> **Note**: You may need to use [`fromJSON`](https://docs.github.com/en/actions/learn-github-actions/expressions#fromjson) to access properties of object outputs. For example, for `skipped_by.runId`, you can use the expression: `${{ fromJSON(steps.skip_check.outputs.skipped_by).runId }}`.
+> **Notes**:
+>
+> - You may need to use [`fromJSON`](https://docs.github.com/en/actions/learn-github-actions/expressions#fromjson) to access properties of object outputs. For example, for `skipped_by.runId`, you can use the expression: `${{ fromJSON(steps.skip_check.outputs.skipped_by).runId }}`.
+> - For GitHub repositories where [default permissions](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository#setting-the-permissions-of-the-github_token-for-your-repository) for `GITHUB_TOKEN` has been set to "permissive (read-only)", the following lines must be included in the workflow (see [permissions syntax](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#permissions)):
+>   ```yaml
+>   # Minimum permissions required by skip-duplicate-actions
+>   permissions:
+>     actions: write
+>     contents: read
+>   ```
 
 ### Example 1: Skip entire jobs
 
