@@ -79,9 +79,9 @@ A JSON-array with ignored path patterns.
 See [cheat sheet](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#filter-pattern-cheat-sheet) for path-pattern examples.
 See [micromatch](https://github.com/micromatch/micromatch) for details about supported path-patterns.
 
-**Example:** `["**/README.md", "**/docs/**"]`
+**Example:** `'["**/README.md", "**/docs/**"]'`
 
-**Default:** `[]`
+**Default:** `'[]'`
 
 ### `paths`
 
@@ -89,9 +89,9 @@ A JSON-array with path patterns.
 If this is non-empty, then `skip-duplicate-actions` will try to skip commits that did not change any of those paths.
 It uses the same syntax as [`paths_ignore`](#paths_ignore).
 
-**Example:** `["platform-specific/**"]`
+**Example:** `'["platform-specific/**"]'`
 
-**Default:** `[]`
+**Default:** `'[]'`
 
 ### `paths_filter`
 
@@ -115,32 +115,36 @@ backend:
   backtracking: 5
 ```
 
-Useful if you have multiple jobs in a workflow and want to skip them based on different [`paths_ignore`](#paths_ignore) / [`paths`](#paths) patterns.
+Useful if you have multiple jobs in one workflow and want to skip them based on different [`paths_ignore`](#paths_ignore) / [`paths`](#paths) patterns.
 See the corresponding [`paths_result`](#paths_result) output and [example configuration](#example-3-skip-using-paths_filter).
 
 ### `cancel_others`
 
 If true, then workflow-runs from outdated commits will be cancelled.
 
-**Default:** `false`
+**Default:** `'false'`
 
 ### `skip_after_successful_duplicate`
 
 If true, skip if an already finished duplicate run can be found.
 
-**Default:** `true`
+**Default:** `'true'`
 
 ### `do_not_skip`
 
 A JSON-array with triggers that should never be skipped.
 
-**Default:** `["workflow_dispatch", "schedule"]`
+Possible values are `pull_request`, `push`, `workflow_dispatch`, `schedule`.
+
+**Default:** `'["workflow_dispatch", "schedule"]'`
 
 ### `concurrent_skipping`
 
+Skip a workflow-run if the same workflow is already running.
+
 One of `never`, `same_content`, `same_content_newer`, `outdated_runs`, `always`.
 
-**Default:** `never`
+**Default:** `'never'`
 
 ## Outputs
 
