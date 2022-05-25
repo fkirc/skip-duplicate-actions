@@ -37,7 +37,7 @@ Therefore, `skip-duplicate-actions` provides the following options to skip a wor
 ## Skip ignored paths
 
 In many projects, it is unnecessary to run all tests for documentation-only-changes.
-Therefore, GitHub provides a [paths-ignore](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#onpushpull_requestpaths) feature out of the box.
+Therefore, GitHub provides a [paths-ignore](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#onpushpull_requestpull_request_targetpathspaths-ignore) feature out of the box.
 However, GitHub's `paths-ignore` has some limitations:
 
 - GitHub's `paths-ignore` fails to look at previous commits. This means that the outcome depends on how often you push changes.
