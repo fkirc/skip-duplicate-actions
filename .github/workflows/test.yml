@@ -1,25 +1,38 @@
-name: 'build-test'
-on: # rebuild any PRs and main branch changes
+name: Build & Test
+
+on: # Rebuild any PRs and main branch changes
   pull_request:
+    branches:
+      - main
   push:
+    branches:
+      - main
 
 jobs:
-  build: # make sure build/ci work properly
+  build: # Make sure build/ci work properly
+    name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - run: |
-          npm install
-      - run: |
-          npm run all
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-  pre_job: # make sure the action works on a clean machine without building
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run all
+
+  pre_job: # Make sure the action works on a clean machine without building
+    name: Pre-Job
     runs-on: ubuntu-latest
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: ./
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Run action
+        uses: ./
         id: skip_check
         with:
           concurrent_skipping: 'never'
@@ -28,39 +41,53 @@ jobs:
           do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
 
   main_job:
+    name: Main Job
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Running slow tests..." && sleep 30
+      - name: Simulate task
+        run: echo "Running slow tests..." && sleep 30
 
   skip_individual_steps_job:
+    name: Skip Individual Steps Job
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: ./
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Run action
+        uses: ./
         id: skip_check
         with:
           cancel_others: 'false'
           paths: '["src/**", "dist/**"]'
-      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+
+      - name: Simulate task
+        if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
         run: |
           echo "Run only if src/ or dist/ changed..." && sleep 30
           echo "Do other stuff..."
 
   private_action:
+    name: Private Action
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: ./
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Run action
+        uses: ./
         id: skip_check
         with:
-          github_token: ${{ github.token }}
           paths_ignore: '["**/*.md"]'
           cancel_others: 'true'
           concurrent_skipping: 'outdated_runs'
           skip_after_successful_duplicate: 'true'
           do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
-      - if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
+
+      - name: Simulate task
+        if: ${{ steps.skip_check.outputs.should_skip == 'false' }}
         run: |
           echo "Do stuff..." && sleep 30
+
