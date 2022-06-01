@@ -3,10 +3,10 @@ name: Build & Test
 on: # Rebuild any PRs and main branch changes
   pull_request:
     branches:
-      - main
+      - master
   push:
     branches:
-      - main
+      - master
 
 jobs:
   build: # Make sure build/ci work properly
