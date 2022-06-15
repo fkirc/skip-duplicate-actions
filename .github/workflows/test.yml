@@ -10,7 +10,6 @@ on: # Rebuild any PRs and main branch changes
 
 jobs:
   build: # Make sure build/ci work properly
-    name: Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -23,7 +22,6 @@ jobs:
         run: npm run all
 
   pre_job: # Make sure the action works on a clean machine without building
-    name: Pre-Job
     runs-on: ubuntu-latest
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
@@ -41,7 +39,6 @@ jobs:
           do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
 
   main_job:
-    name: Main Job
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
@@ -50,7 +47,6 @@ jobs:
         run: echo "Running slow tests..." && sleep 30
 
   skip_individual_steps_job:
-    name: Skip Individual Steps Job
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -70,7 +66,6 @@ jobs:
           echo "Do other stuff..."
 
   private_action:
-    name: Private Action
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
