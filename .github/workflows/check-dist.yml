@@ -1,20 +1,25 @@
-name: Check dist/
+name: Check dist
 
 on:
   push:
+    branches:
+      - master
     paths-ignore:
       - '**.md'
   pull_request:
+    branches:
+      - master
     paths-ignore:
       - '**.md'
   workflow_dispatch:
 
 jobs:
   check-dist:
+    name: Check dist
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -39,8 +44,10 @@ jobs:
         id: diff
 
       # If index.js was different than expected, upload the expected version as an artifact
-      - uses: actions/upload-artifact@v3
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
         if: ${{ failure() && steps.diff.conclusion == 'failure' }}
         with:
           name: dist
           path: dist/
+
