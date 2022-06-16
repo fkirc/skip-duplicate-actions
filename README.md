@@ -362,7 +362,7 @@ This is my personal favorite option and this is implemented by `skip-duplicate-a
 An advantage is that this works regardless of whether you are using PRs or feature-branches, and of course it also works for "required" checks.
 Internally, `skip-duplicate-actions` uses the [Repos Commit API](https://docs.github.com/en/rest/reference/repos#get-a-commit) to perform an efficient backtracking-algorithm for paths-skipping-detection.
 
-## Related Projects
+## Maintainers
 
-GitHub is not the only thing that should be optimized.
-Try `attranslate` if you need to translate websites or apps: https://github.com/fkirc/attranslate
+- @paescuj
+- @fkirc
