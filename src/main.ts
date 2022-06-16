@@ -403,9 +403,7 @@ async function backtracePathSkipping(
     }
     iterSha = commit.parents?.length ? commit.parents[0]?.sha : null
     const changedFiles = commit.files
-      ? (commit.files
-          .map(f => f.filename)
-          .filter(f => typeof f === 'string') as string[])
+      ? commit.files.map(f => f.filename).filter(f => typeof f === 'string')
       : []
     allChangedFiles.push(changedFiles)
 
