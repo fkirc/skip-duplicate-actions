@@ -30,6 +30,7 @@ Therefore, `skip-duplicate-actions` provides the following options to skip a wor
 
 - **Always skip:** This is useful if you have a workflow that you never want to run twice at the same time.
 - **Only skip same content:** For example, this can be useful if a workflow has both a `push` and a `pull_request` trigger, or if you push a tag right after pushing a commit.
+  (*Deprecated*, use `same_content_newer` instead)
 - **Only skip newer runs with the same content:** If the same workflow is running on the exact same content, skip newer runs of it. `same_content_newer` ensures that at least one of those workflows will run, while `same_content` may skip all of them.
 - **Only skip outdated runs:** For example, this can be useful for skip-checks that are not at the beginning of a job.
 - **Never skip:** This disables the concurrent skipping functionality, but still lets you use all other options like duplicate skipping.
