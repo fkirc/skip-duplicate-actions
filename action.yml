@@ -1,5 +1,5 @@
 name: 'Skip Duplicate Actions'
-description: 'Skip duplicate workflow-runs. Skip or ignore specific paths. Cancel outdated workflow-runs.'
+description: 'Skip duplicate workflow runs. Skip or ignore specific paths. Cancel outdated workflow runs.'
 author: 'fkirc'
 branding:
   icon: 'stop-circle'
@@ -21,7 +21,7 @@ inputs:
     description: 'A YAML-string with named paths_ignore/paths patterns'
     required: false
   cancel_others:
-    description: 'If true, then workflow-runs from outdated commits will be cancelled'
+    description: 'If true, then workflow runs from outdated commits will be cancelled'
     required: false
     default: 'false'
   skip_after_successful_duplicate:

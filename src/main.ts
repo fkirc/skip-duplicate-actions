@@ -91,7 +91,7 @@ function parseWorkflowRun(run: ActionsGetWorkflowRunResponseData): WorkflowRun {
   }
   const workflowId = run.workflow_id
   if (!workflowId) {
-    logFatal(`Could not find the workflow id of run ${run.id}`)
+    logFatal(`Could not find the workflow ID of run ${run.id}`)
   }
   return {
     event: run.event as WRunTrigger,
@@ -122,7 +122,7 @@ function parseOlderRuns(
   currentRun: WorkflowRun
 ): WorkflowRun[] {
   const olderRuns = response.workflow_runs.filter(run => {
-    // Only consider older workflow-runs to prevent some nasty race conditions and edge cases.
+    // Only consider older workflow runs to prevent some nasty race conditions and edge cases.
     return (
       new Date(run.created_at).getTime() <
       new Date(currentRun.createdAt).getTime()
@@ -214,7 +214,7 @@ async function main(): Promise<void> {
       const successfulDuplicateRun = detectSuccessfulDuplicateRuns(context)
       if (successfulDuplicateRun) {
         core.info(
-          `Skip execution because the exact same files have been successfully checked in ${successfulDuplicateRun.html_url}`
+          `Skip execution because the exact same files have been successfully checked in run ${successfulDuplicateRun.html_url}`
         )
         exitSuccess({
           shouldSkip: true,
@@ -278,7 +278,7 @@ async function cancelOutdatedRuns(context: WRunContext): Promise<void> {
     )
   })
   if (!cancelVictims.length) {
-    return core.info('Did not find other workflow-runs to be cancelled')
+    return core.info('Did not find other workflow runs to be cancelled')
   }
   for (const victim of cancelVictims) {
     await cancelWorkflowRun(victim, context)
@@ -295,7 +295,7 @@ async function cancelWorkflowRun(
       repo: context.repoName,
       run_id: run.runId
     })
-    core.info(`Cancelled ${run.html_url} with response code ${res.status}`)
+    core.info(`Cancelled run ${run.html_url} with response code ${res.status}`)
   } catch (e) {
     if (e instanceof Error || typeof e === 'string') {
       core.warning(e)
@@ -328,7 +328,7 @@ function detectConcurrentRuns(context: WRunContext): WorkflowRun | undefined {
   })
 
   if (!concurrentRuns.length) {
-    core.info(`Did not find any concurrent workflow-runs`)
+    core.info(`Did not find any concurrent workflow runs`)
     return
   }
   if (context.concurrentSkipping === 'always') {
@@ -354,7 +354,7 @@ function detectConcurrentRuns(context: WRunContext): WorkflowRun | undefined {
     )
     if (concurrentDuplicate) {
       core.info(
-        `Skip execution because the exact same files are concurrently checked in ${concurrentDuplicate.html_url}`
+        `Skip execution because the exact same files are concurrently checked in run ${concurrentDuplicate.html_url}`
       )
       return concurrentDuplicate
     }
@@ -366,12 +366,12 @@ function detectConcurrentRuns(context: WRunContext): WorkflowRun | undefined {
     )
     if (concurrentIsOlder) {
       core.info(
-        `Skip execution because the exact same files are concurrently checked in older ${concurrentIsOlder.html_url}`
+        `Skip execution because the exact same files are concurrently checked in older run ${concurrentIsOlder.html_url}`
       )
       return concurrentIsOlder
     }
   }
-  core.info(`Did not find any concurrent workflow-runs that justify skipping`)
+  core.info(`Did not find any concurrent workflow runs that justify skipping`)
 }
 
 async function backtracePathSkipping(
@@ -475,7 +475,7 @@ async function backtracePathSkipping(
     // Should be never reached in practice; we expect that this loop aborts after 1-3 iterations.
     if (distanceToHEAD++ >= 50) {
       core.warning(
-        'Aborted commit-backtracing due to bad performance - Did you push an excessive number of ignored-path-commits?'
+        'Aborted commit-backtracing due to bad performance - Did you push an excessive number of ignored-path commits?'
       )
       break
     }

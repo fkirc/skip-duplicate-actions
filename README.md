@@ -2,35 +2,35 @@
 
 `skip-duplicate-actions` provides the following features to optimize GitHub Actions:
 
-- [Skip duplicate workflow-runs](#skip-duplicate-workflow-runs) after merges, pull requests or similar.
-- [Skip concurrent or parallel workflow-runs](#skip-concurrent-workflow-runs) for things that you do not want to run twice.
+- [Skip duplicate workflow runs](#skip-duplicate-workflow-runs) after merges, pull requests or similar.
+- [Skip concurrent or parallel workflow runs](#skip-concurrent-workflow-runs) for things that you do not want to run twice.
 - [Skip ignored paths](#skip-ignored-paths) to speedup documentation-changes or similar.
 - [Skip if paths not changed](#skip-if-paths-not-changed) for something like directory-specific tests.
-- [Cancel outdated workflow-runs](#cancel-outdated-workflow-runs) after branch-pushes.
+- [Cancel outdated workflow runs](#cancel-outdated-workflow-runs) after branch-pushes.
 
 All of those features help to save time and costs; especially for long-running workflows.
 You can choose any subset of those features.
 
-## Skip duplicate workflow-runs
+## Skip duplicate workflow runs
 
-If you work with feature branches, then you might see lots of _duplicate workflow-runs_.
-For example, duplicate workflow-runs can happen if a workflow runs on a feature branch, but then the workflow is repeated right after merging the feature branch.
+If you work with feature branches, then you might see lots of _duplicate workflow runs_.
+For example, duplicate workflow runs can happen if a workflow run is performed on a feature branch, but then the workflow run is repeated right after merging the feature branch.
 `skip-duplicate-actions` allows to prevent such runs.
 
 - **Full traceability:** After clean merges, you will see a message like `Skip execution because the exact same files have been successfully checked in <previous_run_URL>`.
 - **Fully configurable:** By default, manual triggers and cron will never be skipped.
 - **Flexible Git usage:** `skip-duplicate-actions` does not care whether you use fast-forward-merges, rebase-merges or squash-merges.
-  However, if a merge yields a result that is different from the source branch, then the resulting workflow-run will _not_ be skipped.
+  However, if a merge yields a result that is different from the source branch, then the resulting workflow run will _not_ be skipped.
   This is commonly the case if you merge "outdated branches".
 
-## Skip concurrent workflow-runs
+## Skip concurrent workflow runs
 
 Sometimes, there are workflows that you do not want to run twice at the same time even if they are triggered twice.
-Therefore, `skip-duplicate-actions` provides the following options to skip a workflow-run if the same workflow is already running:
+Therefore, `skip-duplicate-actions` provides the following options to skip a workflow run if the same workflow is already running:
 
 - **Always skip:** This is useful if you have a workflow that you never want to run twice at the same time.
 - **Only skip same content:** For example, this can be useful if a workflow has both a `push` and a `pull_request` trigger, or if you push a tag right after pushing a commit.
-  (*Deprecated*, use `same_content_newer` instead)
+  (_Deprecated_, use `same_content_newer` instead)
 - **Only skip newer runs with the same content:** If the same workflow is running on the exact same content, skip newer runs of it. `same_content_newer` ensures that at least one of those workflows will run, while `same_content` may skip all of them.
 - **Only skip outdated runs:** For example, this can be useful for skip-checks that are not at the beginning of a job.
 - **Never skip:** This disables the concurrent skipping functionality, but still lets you use all other options like duplicate skipping.
@@ -64,12 +64,12 @@ Instead of blindly skipping checks, the backtracking-algorithm will only skip so
 
 You can use the [`paths_filter`](#paths_filter) option if you need to define multiple `paths` patterns in a single workflow.
 
-## Cancel outdated workflow-runs
+## Cancel outdated workflow runs
 
 Typically, workflows should only run for the most recent commit.
-Therefore, when you push changes to a branch, `skip-duplicate-actions` can be configured to cancel any previous workflow-runs that run against outdated commits.
+Therefore, when you push changes to a branch, `skip-duplicate-actions` can be configured to cancel any previous workflow runs that run against outdated commits.
 
-- **Full traceability:** If a workflow-run is cancelled, then you will see a message like `Cancelled <previous_run_URL>`.
+- **Full traceability:** If a workflow run is cancelled, then you will see a message like `Cancelled <previous_run_URL>`.
 - **Guaranteed execution:** The cancellation-algorithm guarantees that a complete check-set will finish no matter what.
 
 ## Inputs
@@ -121,7 +121,7 @@ See the corresponding [`paths_result`](#paths_result) output and [example config
 
 ### `cancel_others`
 
-If true, then workflow-runs from outdated commits will be cancelled.
+If true, then workflow runs from outdated commits will be cancelled.
 
 **Default:** `'false'`
 
@@ -141,7 +141,7 @@ Possible values are `pull_request`, `push`, `workflow_dispatch`, `schedule`.
 
 ### `concurrent_skipping`
 
-Skip a workflow-run if the same workflow is already running.
+Skip a workflow run if the same workflow is already running.
 
 One of `never`, `same_content`, `same_content_newer`, `outdated_runs`, `always`.
 
@@ -334,12 +334,12 @@ jobs:
 
 ## How does it work?
 
-`skip-duplicate-actions` uses the [Workflow Runs API](https://docs.github.com/en/rest/reference/actions#workflow-runs) to query workflow-runs.
-`skip-duplicate-actions` will only look at workflow-runs that belong to the same workflow as the current workflow-run.
-After querying such workflow-runs, it will compare them with the current workflow-run as follows:
+`skip-duplicate-actions` uses the [Workflow Runs API](https://docs.github.com/en/rest/reference/actions#workflow-runs) to query workflow runs.
+`skip-duplicate-actions` will only look at workflow runs that belong to the same workflow as the current workflow run.
+After querying such workflow runs, it will compare them with the current workflow run as follows:
 
-- If there exists a workflow-runs with the same tree hash, then we have identified a duplicate workflow-run.
-- If there exists an in-progress workflow-run, then we can cancel it or skip, depending on your configuration.
+- If there exists a workflow run with the same tree hash, then we have identified a duplicate workflow run.
+- If there exists an in-progress workflow run, then we can cancel it or skip, depending on your configuration.
 
 ## How does path-skipping work?
 
