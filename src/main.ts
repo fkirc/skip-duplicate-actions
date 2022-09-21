@@ -14,7 +14,7 @@ type ApiCommit =
   Endpoints['GET /repos/{owner}/{repo}/commits/{ref}']['response']['data']
 type PullRequest = {
   headSha: string
-  treeSha: string
+  treeSha?: string
 }
 
 const workflowRunTriggerOptions = [
@@ -533,21 +533,19 @@ async function fetchPullRequests(
   repo: {owner: string; repo: string}
 ): Promise<PullRequest[]> {
   const response = await graphql<{
-    data: {
-      repository: {
-        pullRequests: {
-          edges: {
-            node: {
-              headRefOid: string
-              mergeCommit: {
-                tree: {
-                  oid: string
-                }
+    repository: {
+      pullRequests: {
+        edges: {
+          node: {
+            headRefOid: string
+            mergeCommit: {
+              tree: {
+                oid: string
               }
-            }
+            } | null
           }
-        }[]
-      }
+        }
+      }[]
     }
   }>(
     `
@@ -580,11 +578,9 @@ async function fetchPullRequests(
     }
   )
 
-  core.info(JSON.stringify(response, null, 2))
-
-  return response.data.repository.pullRequests.map(pullRequest => ({
+  return response.repository.pullRequests.map(pullRequest => ({
     headSha: pullRequest.edges.node.headRefOid,
-    treeSha: pullRequest.edges.node.mergeCommit.tree.oid
+    treeSha: pullRequest.edges.node.mergeCommit?.tree.oid
   }))
 }
 

@@ -406,11 +406,13 @@ function fetchPullRequests(token, repo) {
                 authorization: `token ${token}`
             }
         });
-        core.info(JSON.stringify(response, null, 2));
-        return response.data.repository.pullRequests.map(pullRequest => ({
-            headSha: pullRequest.edges.node.headRefOid,
-            treeSha: pullRequest.edges.node.mergeCommit.tree.oid
-        }));
+        return response.repository.pullRequests.map(pullRequest => {
+            var _a;
+            return ({
+                headSha: pullRequest.edges.node.headRefOid,
+                treeSha: (_a = pullRequest.edges.node.mergeCommit) === null || _a === void 0 ? void 0 : _a.tree.oid
+            });
+        });
     });
 }
 function mapWorkflowRun(run, treeHash) {
