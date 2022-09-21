@@ -406,6 +406,7 @@ function fetchPullRequests(token, repo) {
                 authorization: `token ${token}`
             }
         });
+        core.info(JSON.stringify(response, null, 2));
         return response.data.repository.pullRequests.map(pullRequest => ({
             headSha: pullRequest.edges.node.headRefOid,
             treeSha: pullRequest.edges.node.mergeCommit.tree.oid
