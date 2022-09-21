@@ -165,20 +165,20 @@ Returns information about the workflow run which caused the current run to be sk
 
 **Example:**
 
-```jsonc
+```json
 {
+  "id": 1709469369,
+  "runNumber": 737,
   "event": "pull_request",
   "treeHash": "e3434bb7aeb3047d7df948f09419ac96cf03d73e",
   "commitHash": "4a0432e823468ecff81a978165cb35586544c795",
   "status": "completed",
   "conclusion": "success",
-  "html_url": "https://github.com/fkirc/skip-duplicate-actions/actions/runs/1709469369",
+  "htmlUrl": "https://github.com/fkirc/skip-duplicate-actions/actions/runs/1709469369",
   "branch": "master",
   "repo": "fkirc/skip-duplicate-actions",
-  "runId": 1709469369,
   "workflowId": 2640563,
-  "createdAt": "2022-01-17T18:56:06Z",
-  "runNumber": 737
+  "createdAt": "2022-01-17T18:56:06Z"
 }
 ```
 
@@ -195,7 +195,9 @@ Returns information for each configured filter in `paths_filter`.
   "frontend": {
     "should_skip": true,
     "backtrack_count": 1,
-    "skipped_by": { // Information about the workflow run },
+    "skipped_by": {
+      // Information about the workflow run
+    },
   "backend": {
     "should_skip": false,
     "backtrack_count": 1,
@@ -231,7 +233,7 @@ To minimize changes to existing jobs, it is often easier to skip entire jobs.
 
 > **Note**
 >
-> - You may need to use [`fromJSON`](https://docs.github.com/en/actions/learn-github-actions/expressions#fromjson) to access properties of object outputs. For example, for `skipped_by.runId`, you can use the expression: `${{ fromJSON(steps.skip_check.outputs.skipped_by).runId }}`.
+> - You may need to use [`fromJSON`](https://docs.github.com/en/actions/learn-github-actions/expressions#fromjson) to access properties of object outputs. For example, for `skipped_by.id`, you can use the expression: `${{ fromJSON(steps.skip_check.outputs.skipped_by).id }}`.
 > - For GitHub repositories where [default permissions](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository#setting-the-permissions-of-the-github_token-for-your-repository) for `GITHUB_TOKEN` has been set to "permissive (read-only)", the following lines must be included in the workflow (see [permissions syntax](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#permissions)):
 >   ```yaml
 >   # Minimum permissions required by skip-duplicate-actions
