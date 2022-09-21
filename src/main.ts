@@ -4,6 +4,7 @@ import type {Endpoints} from '@octokit/types'
 import {GitHub} from '@actions/github/lib/utils'
 import micromatch from 'micromatch'
 import yaml from 'js-yaml'
+import {graphql} from '@octokit/graphql'
 
 type ApiWorkflowRun =
   Endpoints['GET /repos/{owner}/{repo}/actions/runs/{run_id}']['response']['data']
@@ -11,6 +12,10 @@ type ApiWorkflowRuns =
   Endpoints['GET /repos/{owner}/{repo}/actions/runs']['response']['data']['workflow_runs'][number]
 type ApiCommit =
   Endpoints['GET /repos/{owner}/{repo}/commits/{ref}']['response']['data']
+type PullRequest = {
+  headSha: string
+  treeSha: string
+}
 
 const workflowRunTriggerOptions = [
   'pull_request',
@@ -450,46 +455,68 @@ async function main(): Promise<void> {
   const octokit = github.getOctokit(token)
 
   // Get and parse the current workflow run.
-  const {data: workflowRun} = await octokit.rest.actions.getWorkflowRun({
+  const {data: apiCurrentRun} = await octokit.rest.actions.getWorkflowRun({
     ...repo,
     run_id: github.context.runId
   })
-  const treeHash = workflowRun.head_commit?.tree_id
-  if (!treeHash) {
+  const currentTreeHash = apiCurrentRun.head_commit?.tree_id
+  if (!currentTreeHash) {
     exitFail(`
-        Could not find the tree hash of run ${workflowRun.id} (Workflow ID: ${workflowRun.workflow_id},
-        Name: ${workflowRun.name}, Head Branch: ${workflowRun.head_branch}, Head SHA: ${workflowRun.head_sha}).
+        Could not find the tree hash of run ${apiCurrentRun.id} (Workflow ID: ${apiCurrentRun.workflow_id},
+        Name: ${apiCurrentRun.name}, Head Branch: ${apiCurrentRun.head_branch}, Head SHA: ${apiCurrentRun.head_sha}).
         This might be a run associated with a headless or removed commit.
       `)
   }
-  const currentRun = mapWorkflowRun(workflowRun, treeHash)
+  const currentRun = mapWorkflowRun(apiCurrentRun, currentTreeHash)
 
   // Fetch list of runs for current workflow.
   const {
-    data: {workflow_runs: workflowRuns}
+    data: {workflow_runs: apiAllRuns}
   } = await octokit.rest.actions.listWorkflowRuns({
     ...repo,
     workflow_id: currentRun.workflowId,
     per_page: 100
   })
 
-  // Check and map all runs.
-  const allRuns = workflowRuns.reduce((result: WorkflowRun[], run) => {
-    // Filter out current run and runs that lack 'head_commit' (most likely runs associated with a headless or removed commit).
-    // See https://github.com/fkirc/skip-duplicate-actions/pull/178.
-    if (run.id !== currentRun.id && run.head_commit) {
-      result.push(mapWorkflowRun(run, run.head_commit.tree_id))
-    }
-    return result
-  }, [])
+  // Placeholder for pull requests.
+  let pullRequests: PullRequest[] | undefined
 
+  // List with all workflow runs.
+  const allRuns = []
   // List with older workflow runs only (used to prevent some nasty race conditions and edge cases).
-  const olderRuns = allRuns.filter(run => {
-    return (
-      new Date(run.createdAt).getTime() <
-      new Date(currentRun.createdAt).getTime()
-    )
-  })
+  const olderRuns = []
+
+  // Check and map all runs.
+  for (const run of apiAllRuns) {
+    let treeHash = run.head_commit?.tree_id
+
+    // Use tree hash from merge commit on runs from pull requests.
+    if (run.event === 'pull_request' || run.event === 'pull_request_target') {
+      // Fetch pull requests if not already done.
+      if (!pullRequests) {
+        pullRequests = await fetchPullRequests(token, repo)
+      }
+
+      treeHash = pullRequests.find(
+        pullRequest => pullRequest.headSha === run.head_sha
+      )?.treeSha
+    }
+
+    // Filter out current run and runs that lack the tree hash (most likely runs associated with a headless or removed commit).
+    // See https://github.com/fkirc/skip-duplicate-actions/pull/178.
+    if (run.id !== currentRun.id && treeHash) {
+      const mappedRun = mapWorkflowRun(run, treeHash)
+      // Add to list of all runs.
+      allRuns.push(mappedRun)
+      // Check if run can be added to list of older runs.
+      if (
+        new Date(mappedRun.createdAt).getTime() <
+        new Date(currentRun.createdAt).getTime()
+      ) {
+        olderRuns.push(mappedRun)
+      }
+    }
+  }
 
   const skipDuplicateActions = new SkipDuplicateActions(inputs, {
     repo,
@@ -499,6 +526,64 @@ async function main(): Promise<void> {
     olderRuns
   })
   await skipDuplicateActions.run()
+}
+
+async function fetchPullRequests(
+  token: string,
+  repo: {owner: string; repo: string}
+): Promise<PullRequest[]> {
+  const response = await graphql<{
+    data: {
+      repository: {
+        pullRequests: {
+          edges: {
+            node: {
+              headRefOid: string
+              mergeCommit: {
+                tree: {
+                  oid: string
+                }
+              }
+            }
+          }
+        }[]
+      }
+    }
+  }>(
+    `
+      query ($owner: String!, $repo: String!) {
+        repository(owner: $owner, name: $repo) {
+          pullRequests(
+            last: 100
+            orderBy: {field: UPDATED_AT, direction: ASC}
+          ) {
+            edges {
+              node {
+                headRefOid
+                mergeCommit {
+                  tree {
+                    oid
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `,
+    {
+      owner: repo.owner,
+      repo: repo.repo,
+      headers: {
+        authorization: `token ${token}`
+      }
+    }
+  )
+
+  return response.data.repository.pullRequests.map(pullRequest => ({
+    headSha: pullRequest.edges.node.headRefOid,
+    treeSha: pullRequest.edges.node.mergeCommit.tree.oid
+  }))
 }
 
 function mapWorkflowRun(
