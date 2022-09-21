@@ -406,11 +406,11 @@ function fetchPullRequests(token, repo) {
                 authorization: `token ${token}`
             }
         });
-        return response.repository.pullRequests.map(pullRequest => {
+        return response.repository.pullRequests.edges.map(pullRequest => {
             var _a;
             return ({
-                headSha: pullRequest.edges.node.headRefOid,
-                treeSha: (_a = pullRequest.edges.node.mergeCommit) === null || _a === void 0 ? void 0 : _a.tree.oid
+                headSha: pullRequest.node.headRefOid,
+                treeSha: (_a = pullRequest.node.mergeCommit) === null || _a === void 0 ? void 0 : _a.tree.oid
             });
         });
     });

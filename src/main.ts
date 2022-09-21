@@ -544,8 +544,8 @@ async function fetchPullRequests(
               }
             } | null
           }
-        }
-      }[]
+        }[]
+      }
     }
   }>(
     `
@@ -578,9 +578,9 @@ async function fetchPullRequests(
     }
   )
 
-  return response.repository.pullRequests.map(pullRequest => ({
-    headSha: pullRequest.edges.node.headRefOid,
-    treeSha: pullRequest.edges.node.mergeCommit?.tree.oid
+  return response.repository.pullRequests.edges.map(pullRequest => ({
+    headSha: pullRequest.node.headRefOid,
+    treeSha: pullRequest.node.mergeCommit?.tree.oid
   }))
 }
 
