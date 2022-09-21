@@ -13,6 +13,7 @@ type ApiWorkflowRuns =
 type ApiCommit =
   Endpoints['GET /repos/{owner}/{repo}/commits/{ref}']['response']['data']
 type PullRequest = {
+  number: number
   headSha: string
   treeSha?: string
 }
@@ -497,9 +498,15 @@ async function main(): Promise<void> {
         pullRequests = await fetchPullRequests(token, repo)
       }
 
-      treeHash = pullRequests.find(
+      const associatedPullRequest = pullRequests.find(
         pullRequest => pullRequest.headSha === run.head_sha
-      )?.treeSha
+      )
+      if (associatedPullRequest) {
+        core.info(
+          `Found pull request "${associatedPullRequest.number}" for run "${run.html_url}"`
+        )
+      }
+      treeHash = associatedPullRequest?.treeSha
     }
 
     // Filter out current run and runs that lack the tree hash (most likely runs associated with a headless or removed commit).
@@ -537,6 +544,8 @@ async function fetchPullRequests(
       pullRequests: {
         edges: {
           node: {
+            title: string
+            number: number
             headRefOid: string
             mergeCommit: {
               tree: {
@@ -557,6 +566,7 @@ async function fetchPullRequests(
           ) {
             edges {
               node {
+                number
                 headRefOid
                 mergeCommit {
                   tree {
@@ -579,6 +589,7 @@ async function fetchPullRequests(
   )
 
   return response.repository.pullRequests.edges.map(pullRequest => ({
+    number: pullRequest.node.number,
     headSha: pullRequest.node.headRefOid,
     treeSha: pullRequest.node.mergeCommit?.tree.oid
   }))

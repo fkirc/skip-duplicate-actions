@@ -309,7 +309,7 @@ class SkipDuplicateActions {
     }
 }
 function main() {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d;
     return __awaiter(this, void 0, void 0, function* () {
         // Get and validate inputs.
         const token = core.getInput('github_token', { required: true });
@@ -352,7 +352,11 @@ function main() {
                 if (!pullRequests) {
                     pullRequests = yield fetchPullRequests(token, repo);
                 }
-                treeHash = (_e = pullRequests.find(pullRequest => pullRequest.headSha === run.head_sha)) === null || _e === void 0 ? void 0 : _e.treeSha;
+                const associatedPullRequest = pullRequests.find(pullRequest => pullRequest.headSha === run.head_sha);
+                if (associatedPullRequest) {
+                    core.info(`Found pull request "${associatedPullRequest.number}" for run "${run.html_url}"`);
+                }
+                treeHash = associatedPullRequest === null || associatedPullRequest === void 0 ? void 0 : associatedPullRequest.treeSha;
             }
             // Filter out current run and runs that lack the tree hash (most likely runs associated with a headless or removed commit).
             // See https://github.com/fkirc/skip-duplicate-actions/pull/178.
@@ -388,6 +392,7 @@ function fetchPullRequests(token, repo) {
           ) {
             edges {
               node {
+                number
                 headRefOid
                 mergeCommit {
                   tree {
@@ -409,6 +414,7 @@ function fetchPullRequests(token, repo) {
         return response.repository.pullRequests.edges.map(pullRequest => {
             var _a;
             return ({
+                number: pullRequest.node.number,
                 headSha: pullRequest.node.headRefOid,
                 treeSha: (_a = pullRequest.node.mergeCommit) === null || _a === void 0 ? void 0 : _a.tree.oid
             });
