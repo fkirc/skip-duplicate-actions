@@ -503,8 +503,10 @@ async function main(): Promise<void> {
       )
       if (associatedPullRequest) {
         core.info(
-          `Found pull request "${associatedPullRequest.number}" for run "${run.html_url}"`
+          `Found pull request #${associatedPullRequest.number} for run ${run.html_url}, tree SHA is '${associatedPullRequest.treeSha}'`
         )
+      } else {
+        core.info(`Couldn't find pull request for run ${run.html_url}`)
       }
       treeHash = associatedPullRequest?.treeSha
     }

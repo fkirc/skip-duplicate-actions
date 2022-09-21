@@ -354,7 +354,10 @@ function main() {
                 }
                 const associatedPullRequest = pullRequests.find(pullRequest => pullRequest.headSha === run.head_sha);
                 if (associatedPullRequest) {
-                    core.info(`Found pull request "${associatedPullRequest.number}" for run "${run.html_url}"`);
+                    core.info(`Found pull request #${associatedPullRequest.number} for run ${run.html_url}, tree SHA is '${associatedPullRequest.treeSha}'`);
+                }
+                else {
+                    core.info(`Couldn't find pull request for run ${run.html_url}`);
                 }
                 treeHash = associatedPullRequest === null || associatedPullRequest === void 0 ? void 0 : associatedPullRequest.treeSha;
             }
