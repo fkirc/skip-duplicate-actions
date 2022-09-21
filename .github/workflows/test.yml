@@ -36,7 +36,28 @@ jobs:
           concurrent_skipping: 'never'
           skip_after_successful_duplicate: 'true'
           paths_ignore: '["**/README.md", "**/docs/**"]'
-          do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
+
+      - name: Print outputs
+        run: |
+          echo '::group::should_skip'
+          echo '${{ steps.skip_check.outputs.should_skip }}'
+          echo '::endgroup::'
+
+          echo '::group::reason'
+          echo '${{ steps.skip_check.outputs.reason }}'
+          echo '::endgroup::'
+
+          echo '::group::skipped_by'
+          echo '${{ toJSON(fromJSON(steps.skip_check.outputs.skipped_by)) }}'
+          echo '::endgroup::'
+
+          echo '::group::paths_result'
+          echo '${{ toJSON(fromJSON(steps.skip_check.outputs.paths_result)) }}'
+          echo '::endgroup::'
+
+          echo '::group::changed_files'
+          echo '${{ toJSON(fromJSON(steps.skip_check.outputs.changed_files)) }}'
+          echo '::endgroup::'
 
   main_job:
     needs: pre_job
