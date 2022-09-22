@@ -306,7 +306,9 @@ class SkipDuplicateActions {
       }
       iterSha = commit.parents?.length ? commit.parents[0]?.sha : null
       const changedFiles = commit.files
-        ? commit.files.map(f => f.filename).filter(f => typeof f === 'string')
+        ? commit.files
+            .map(file => file.filename)
+            .filter(file => typeof file === 'string')
         : []
       allChangedFiles.push(changedFiles)
 
@@ -418,11 +420,12 @@ class SkipDuplicateActions {
       return null
     }
     try {
-      const res = await this.context.octokit.rest.repos.getCommit({
-        ...this.context.repo,
-        ref: sha
-      })
-      return res.data
+      return (
+        await this.context.octokit.rest.repos.getCommit({
+          ...this.context.repo,
+          ref: sha
+        })
+      ).data
     } catch (error) {
       if (error instanceof Error || typeof error === 'string') {
         core.warning(error)
@@ -442,9 +445,10 @@ async function main(): Promise<void> {
     pathsFilter: getPathsFilterInput('paths_filter'),
     doNotSkip: getDoNotSkipInput('do_not_skip'),
     concurrentSkipping: getConcurrentSkippingInput('concurrent_skipping'),
-    cancelOthers: core.getBooleanInput('cancel_others') ?? false,
-    skipAfterSuccessfulDuplicates:
-      core.getBooleanInput('skip_after_successful_duplicate') ?? true
+    cancelOthers: core.getBooleanInput('cancel_others'),
+    skipAfterSuccessfulDuplicates: core.getBooleanInput(
+      'skip_after_successful_duplicate'
+    )
   }
 
   const repo = github.context.repo
