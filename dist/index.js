@@ -50,7 +50,8 @@ const workflowRunTriggerOptions = [
     'pull_request',
     'push',
     'workflow_dispatch',
-    'schedule'
+    'schedule',
+    'release'
 ];
 const concurrentSkippingOptions = [
     'always',
@@ -221,7 +222,9 @@ class SkipDuplicateActions {
                 }
                 iterSha = ((_a = commit.parents) === null || _a === void 0 ? void 0 : _a.length) ? (_b = commit.parents[0]) === null || _b === void 0 ? void 0 : _b.sha : null;
                 const changedFiles = commit.files
-                    ? commit.files.map(f => f.filename).filter(f => typeof f === 'string')
+                    ? commit.files
+                        .map(file => file.filename)
+                        .filter(file => typeof file === 'string')
                     : [];
                 allChangedFiles.push(changedFiles);
                 const successfulRun = (distanceToHEAD >= 1 &&
@@ -294,8 +297,7 @@ class SkipDuplicateActions {
                 return null;
             }
             try {
-                const res = yield this.context.octokit.rest.repos.getCommit(Object.assign(Object.assign({}, this.context.repo), { ref: sha }));
-                return res.data;
+                return (yield this.context.octokit.rest.repos.getCommit(Object.assign(Object.assign({}, this.context.repo), { ref: sha }))).data;
             }
             catch (error) {
                 if (error instanceof Error || typeof error === 'string') {
@@ -308,7 +310,7 @@ class SkipDuplicateActions {
     }
 }
 function main() {
-    var _a, _b, _c;
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         // Get and validate inputs.
         const token = core.getInput('github_token', { required: true });
@@ -318,14 +320,14 @@ function main() {
             pathsFilter: getPathsFilterInput('paths_filter'),
             doNotSkip: getDoNotSkipInput('do_not_skip'),
             concurrentSkipping: getConcurrentSkippingInput('concurrent_skipping'),
-            cancelOthers: (_a = core.getBooleanInput('cancel_others')) !== null && _a !== void 0 ? _a : false,
-            skipAfterSuccessfulDuplicates: (_b = core.getBooleanInput('skip_after_successful_duplicate')) !== null && _b !== void 0 ? _b : true
+            cancelOthers: core.getBooleanInput('cancel_others'),
+            skipAfterSuccessfulDuplicates: core.getBooleanInput('skip_after_successful_duplicate')
         };
         const repo = github.context.repo;
         const octokit = github.getOctokit(token);
         // Get and parse the current workflow run.
         const { data: apiCurrentRun } = yield octokit.rest.actions.getWorkflowRun(Object.assign(Object.assign({}, repo), { run_id: github.context.runId }));
-        const currentTreeHash = (_c = apiCurrentRun.head_commit) === null || _c === void 0 ? void 0 : _c.tree_id;
+        const currentTreeHash = (_a = apiCurrentRun.head_commit) === null || _a === void 0 ? void 0 : _a.tree_id;
         if (!currentTreeHash) {
             exitFail(`
         Could not find the tree hash of run ${apiCurrentRun.id} (Workflow ID: ${apiCurrentRun.workflow_id},

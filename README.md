@@ -135,7 +135,7 @@ If true, skip if an already finished duplicate run can be found.
 
 A JSON-array with triggers that should never be skipped.
 
-Possible values are `pull_request`, `push`, `workflow_dispatch`, `schedule`.
+Possible values are `pull_request`, `push`, `workflow_dispatch`, `schedule`, `release`.
 
 **Default:** `'["workflow_dispatch", "schedule"]'`
 
