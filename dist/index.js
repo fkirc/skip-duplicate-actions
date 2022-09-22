@@ -46,135 +46,46 @@ const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const micromatch_1 = __importDefault(__nccwpck_require__(6228));
 const js_yaml_1 = __importDefault(__nccwpck_require__(1917));
-const concurrentSkippingMap = {
-    always: null,
-    same_content: null,
-    same_content_newer: null,
-    outdated_runs: null,
-    never: null
-};
-function getConcurrentSkippingOptions() {
-    return Object.keys(concurrentSkippingMap);
-}
-function parseWorkflowRun(run) {
-    var _a, _b, _c, _d;
-    const treeHash = (_a = run.head_commit) === null || _a === void 0 ? void 0 : _a.tree_id;
-    if (!treeHash) {
-        logFatal(`
-      Could not find the tree hash of run ${run.id} (workflow: $ {run.workflow_id},
-      name: ${run.name}, head_branch: ${run.head_branch}, head_sha: ${run.head_sha}).
-      You might have a run associated with a headless or removed commit.
-    `);
+const workflowRunTriggerOptions = [
+    'pull_request',
+    'push',
+    'workflow_dispatch',
+    'schedule'
+];
+const concurrentSkippingOptions = [
+    'always',
+    'same_content',
+    'same_content_newer',
+    'outdated_runs',
+    'never'
+];
+class SkipDuplicateActions {
+    constructor(inputs, context) {
+        this.globOptions = {
+            dot: true // Match dotfiles. Otherwise dotfiles are ignored unless a "." is explicitly defined in the pattern.
+        };
+        this.inputs = inputs;
+        this.context = context;
     }
-    const workflowId = run.workflow_id;
-    if (!workflowId) {
-        logFatal(`Could not find the workflow ID of run ${run.id}`);
-    }
-    return {
-        event: run.event,
-        treeHash,
-        commitHash: run.head_sha,
-        status: run.status,
-        conclusion: (_b = run.conclusion) !== null && _b !== void 0 ? _b : null,
-        html_url: run.html_url,
-        branch: (_c = run.head_branch) !== null && _c !== void 0 ? _c : null,
-        repo: (_d = run.head_repository.full_name) !== null && _d !== void 0 ? _d : null,
-        runId: run.id,
-        workflowId,
-        createdAt: run.created_at,
-        runNumber: run.run_number
-    };
-}
-function parseAllRuns(response) {
-    return response.workflow_runs
-        .filter(run => run.head_commit && run.workflow_id)
-        .map(run => parseWorkflowRun(run));
-}
-function parseOlderRuns(response, currentRun) {
-    const olderRuns = response.workflow_runs.filter(run => {
-        // Only consider older workflow runs to prevent some nasty race conditions and edge cases.
-        return (new Date(run.created_at).getTime() <
-            new Date(currentRun.createdAt).getTime());
-    });
-    return olderRuns
-        .filter(run => run.head_commit && run.workflow_id)
-        .map(run => parseWorkflowRun(run));
-}
-function main() {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const token = core.getInput('github_token', { required: true });
-            if (!token) {
-                logFatal('Did not find github_token');
+    run() {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Cancel outdated runs.
+            if (this.inputs.cancelOthers) {
+                yield this.cancelOutdatedRuns();
             }
-            const repo = github.context.repo;
-            const repoOwner = repo === null || repo === void 0 ? void 0 : repo.owner;
-            if (!repoOwner) {
-                logFatal('Did not find the repo owner');
-            }
-            const repoName = repo === null || repo === void 0 ? void 0 : repo.repo;
-            if (!repoName) {
-                logFatal('Did not find the repo name');
-            }
-            const runId = github.context.runId;
-            if (!runId) {
-                logFatal('Did not find runId');
-            }
-            let context;
-            try {
-                const octokit = github.getOctokit(token);
-                const { data: current_run } = yield octokit.rest.actions.getWorkflowRun({
-                    owner: repoOwner,
-                    repo: repoName,
-                    run_id: runId
-                });
-                const currentRun = parseWorkflowRun(current_run);
-                const { data } = yield octokit.rest.actions.listWorkflowRuns({
-                    owner: repoOwner,
-                    repo: repoName,
-                    workflow_id: currentRun.workflowId,
-                    per_page: 100
-                });
-                context = {
-                    repoOwner,
-                    repoName,
-                    currentRun,
-                    olderRuns: parseOlderRuns(data, currentRun),
-                    allRuns: parseAllRuns(data),
-                    octokit,
-                    pathsIgnore: getStringArrayInput('paths_ignore'),
-                    paths: getStringArrayInput('paths'),
-                    pathsFilter: getPathsFilterInput('paths_filter'),
-                    doNotSkip: getStringArrayInput('do_not_skip'),
-                    concurrentSkipping: getConcurrentSkippingInput('concurrent_skipping')
-                };
-            }
-            catch (e) {
-                if (e instanceof Error || typeof e === 'string') {
-                    core.warning(e);
-                }
-                core.warning('Failed to fetch the required workflow information');
-                exitSuccess({
-                    shouldSkip: false,
-                    reason: 'no_workflow_information'
-                });
-            }
-            const cancelOthers = getBooleanInput('cancel_others', false);
-            if (cancelOthers) {
-                yield cancelOutdatedRuns(context);
-            }
-            if (context.doNotSkip.includes(context.currentRun.event)) {
-                core.info(`Do not skip execution because the workflow was triggered with '${context.currentRun.event}'`);
+            // Abort early if current run has been triggered by an event that should never be skipped.
+            if (this.inputs.doNotSkip.includes(this.context.currentRun.event)) {
+                core.info(`Do not skip execution because the workflow was triggered with '${this.context.currentRun.event}'`);
                 exitSuccess({
                     shouldSkip: false,
                     reason: 'do_not_skip'
                 });
             }
-            const skipAfterSuccessfulDuplicates = getBooleanInput('skip_after_successful_duplicate', true);
-            if (skipAfterSuccessfulDuplicates) {
-                const successfulDuplicateRun = detectSuccessfulDuplicateRuns(context);
+            // Skip on successful duplicate run.
+            if (this.inputs.skipAfterSuccessfulDuplicates) {
+                const successfulDuplicateRun = this.findSuccessfulDuplicateRun(this.context.currentRun.treeHash);
                 if (successfulDuplicateRun) {
-                    core.info(`Skip execution because the exact same files have been successfully checked in run ${successfulDuplicateRun.html_url}`);
+                    core.info(`Skip execution because the exact same files have been successfully checked in run ${successfulDuplicateRun.htmlUrl}`);
                     exitSuccess({
                         shouldSkip: true,
                         reason: 'skip_after_successful_duplicate',
@@ -182,8 +93,9 @@ function main() {
                     });
                 }
             }
-            if (context.concurrentSkipping !== 'never') {
-                const concurrentRun = detectConcurrentRuns(context);
+            // Skip on concurrent runs.
+            if (this.inputs.concurrentSkipping !== 'never') {
+                const concurrentRun = this.detectConcurrentRuns();
                 if (concurrentRun) {
                     exitSuccess({
                         shouldSkip: true,
@@ -192,10 +104,11 @@ function main() {
                     });
                 }
             }
-            if (context.paths.length >= 1 ||
-                context.pathsIgnore.length >= 1 ||
-                Object.keys(context.pathsFilter).length >= 1) {
-                const { changedFiles, pathsResult } = yield backtracePathSkipping(context);
+            // Skip on path matches.
+            if (this.inputs.paths.length >= 1 ||
+                this.inputs.pathsIgnore.length >= 1 ||
+                Object.keys(this.inputs.pathsFilter).length >= 1) {
+                const { changedFiles, pathsResult } = yield this.backtracePathSkipping();
                 exitSuccess({
                     shouldSkip: pathsResult.global.should_skip === 'unknown'
                         ? false
@@ -206,239 +119,335 @@ function main() {
                     pathsResult
                 });
             }
+            // Do not skip otherwise.
             core.info('Do not skip execution because we did not find a transferable run');
             exitSuccess({
                 shouldSkip: false,
                 reason: 'no_transferable_run'
             });
-        }
-        catch (e) {
-            if (e instanceof Error) {
-                core.error(e);
-                logFatal(e.message);
-            }
-        }
-    });
-}
-function cancelOutdatedRuns(context) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const currentRun = context.currentRun;
-        const cancelVictims = context.olderRuns.filter(run => {
-            if (run.status === 'completed') {
-                return false;
-            }
-            return (run.treeHash !== currentRun.treeHash &&
-                run.branch === currentRun.branch &&
-                run.repo === currentRun.repo);
         });
-        if (!cancelVictims.length) {
-            return core.info('Did not find other workflow runs to be cancelled');
-        }
-        for (const victim of cancelVictims) {
-            yield cancelWorkflowRun(victim, context);
-        }
-    });
-}
-function cancelWorkflowRun(run, context) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const res = yield context.octokit.rest.actions.cancelWorkflowRun({
-                owner: context.repoOwner,
-                repo: context.repoName,
-                run_id: run.runId
+    }
+    cancelOutdatedRuns() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const cancelVictims = this.context.olderRuns.filter(run => {
+                // Only cancel runs which are not yet completed.
+                if (run.status === 'completed') {
+                    return false;
+                }
+                // Only cancel runs from same branch and repo (ignore pull request runs from remote repositories)
+                // and not with same tree hash.
+                // See https://github.com/fkirc/skip-duplicate-actions/pull/177.
+                return (run.treeHash !== this.context.currentRun.treeHash &&
+                    run.branch === this.context.currentRun.branch &&
+                    run.repo === this.context.currentRun.repo);
             });
-            core.info(`Cancelled run ${run.html_url} with response code ${res.status}`);
-        }
-        catch (e) {
-            if (e instanceof Error || typeof e === 'string') {
-                core.warning(e);
+            if (!cancelVictims.length) {
+                return core.info('Did not find other workflow runs to be cancelled');
             }
-            core.warning(`Failed to cancel ${run.html_url}`);
-        }
-    });
-}
-function detectSuccessfulDuplicateRuns(context) {
-    const duplicateRuns = context.olderRuns.filter(run => run.treeHash === context.currentRun.treeHash);
-    const successfulDuplicate = duplicateRuns.find(run => {
-        return run.status === 'completed' && run.conclusion === 'success';
-    });
-    return successfulDuplicate;
-}
-function detectConcurrentRuns(context) {
-    const concurrentRuns = context.allRuns.filter(run => {
-        if (run.status === 'completed') {
-            return false;
-        }
-        if (run.runId === context.currentRun.runId) {
-            return false;
-        }
-        return true;
-    });
-    if (!concurrentRuns.length) {
-        core.info(`Did not find any concurrent workflow runs`);
-        return;
-    }
-    if (context.concurrentSkipping === 'always') {
-        core.info(`Skip execution because another instance of the same workflow is already running in ${concurrentRuns[0].html_url}`);
-        return concurrentRuns[0];
-    }
-    else if (context.concurrentSkipping === 'outdated_runs') {
-        const newerRun = concurrentRuns.find(run => new Date(run.createdAt).getTime() >
-            new Date(context.currentRun.createdAt).getTime());
-        if (newerRun) {
-            core.info(`Skip execution because a newer instance of the same workflow is running in ${newerRun.html_url}`);
-            return newerRun;
-        }
-    }
-    else if (context.concurrentSkipping === 'same_content') {
-        const concurrentDuplicate = concurrentRuns.find(run => run.treeHash === context.currentRun.treeHash);
-        if (concurrentDuplicate) {
-            core.info(`Skip execution because the exact same files are concurrently checked in run ${concurrentDuplicate.html_url}`);
-            return concurrentDuplicate;
-        }
-    }
-    else if (context.concurrentSkipping === 'same_content_newer') {
-        const concurrentIsOlder = concurrentRuns.find(run => run.treeHash === context.currentRun.treeHash &&
-            run.runNumber < context.currentRun.runNumber);
-        if (concurrentIsOlder) {
-            core.info(`Skip execution because the exact same files are concurrently checked in older run ${concurrentIsOlder.html_url}`);
-            return concurrentIsOlder;
-        }
-    }
-    core.info(`Did not find any concurrent workflow runs that justify skipping`);
-}
-function backtracePathSkipping(context) {
-    var _a, _b;
-    return __awaiter(this, void 0, void 0, function* () {
-        let commit;
-        let iterSha = context.currentRun.commitHash;
-        let distanceToHEAD = 0;
-        const allChangedFiles = [];
-        const pathsFilter = Object.assign(Object.assign({}, context.pathsFilter), { global: {
-                paths: context.paths,
-                paths_ignore: context.pathsIgnore,
-                backtracking: true
-            } });
-        const pathsResult = {};
-        for (const name of Object.keys(pathsFilter)) {
-            pathsResult[name] = { should_skip: 'unknown', backtrack_count: 0 };
-        }
-        do {
-            commit = yield fetchCommitDetails(iterSha, context);
-            if (!commit) {
-                break;
+            for (const victim of cancelVictims) {
+                try {
+                    const res = yield this.context.octokit.rest.actions.cancelWorkflowRun(Object.assign(Object.assign({}, this.context.repo), { run_id: victim.id }));
+                    core.info(`Cancelled run ${victim.htmlUrl} with response code ${res.status}`);
+                }
+                catch (error) {
+                    if (error instanceof Error || typeof error === 'string') {
+                        core.warning(error);
+                    }
+                    core.warning(`Failed to cancel ${victim.htmlUrl}`);
+                }
             }
-            iterSha = ((_a = commit.parents) === null || _a === void 0 ? void 0 : _a.length) ? (_b = commit.parents[0]) === null || _b === void 0 ? void 0 : _b.sha : null;
-            const changedFiles = commit.files
-                ? commit.files.map(f => f.filename).filter(f => typeof f === 'string')
-                : [];
-            allChangedFiles.push(changedFiles);
-            const successfulRun = (distanceToHEAD >= 1 &&
-                findSuccessfulRun(commit.commit.tree.sha, context.olderRuns)) ||
-                undefined;
-            for (const [name, values] of Object.entries(pathsResult)) {
-                // Only process paths where status is not determined yet.
-                if (values.should_skip !== 'unknown')
-                    continue;
-                // Skip if paths were ignorable or skippable until now and there is a successful run on the current commit.
-                if (successfulRun) {
-                    pathsResult[name].should_skip = true;
-                    pathsResult[name].skipped_by = successfulRun;
-                    pathsResult[name].backtrack_count = distanceToHEAD;
-                    core.info(`Skip '${name}' because all changes since ${successfulRun.html_url} are in ignored or skipped paths`);
-                    continue;
+        });
+    }
+    findSuccessfulDuplicateRun(treeHash) {
+        return this.context.olderRuns.find(run => run.treeHash === treeHash &&
+            run.status === 'completed' &&
+            run.conclusion === 'success');
+    }
+    detectConcurrentRuns() {
+        const concurrentRuns = this.context.allRuns.filter(run => run.status !== 'completed');
+        if (!concurrentRuns.length) {
+            core.info('Did not find any concurrent workflow runs');
+            return;
+        }
+        if (this.inputs.concurrentSkipping === 'always') {
+            core.info(`Skip execution because another instance of the same workflow is already running in ${concurrentRuns[0].htmlUrl}`);
+            return concurrentRuns[0];
+        }
+        else if (this.inputs.concurrentSkipping === 'outdated_runs') {
+            const newerRun = concurrentRuns.find(run => new Date(run.createdAt).getTime() >
+                new Date(this.context.currentRun.createdAt).getTime());
+            if (newerRun) {
+                core.info(`Skip execution because a newer instance of the same workflow is running in ${newerRun.htmlUrl}`);
+                return newerRun;
+            }
+        }
+        else if (this.inputs.concurrentSkipping === 'same_content') {
+            const concurrentDuplicate = concurrentRuns.find(run => run.treeHash === this.context.currentRun.treeHash);
+            if (concurrentDuplicate) {
+                core.info(`Skip execution because the exact same files are concurrently checked in run ${concurrentDuplicate.htmlUrl}`);
+                return concurrentDuplicate;
+            }
+        }
+        else if (this.inputs.concurrentSkipping === 'same_content_newer') {
+            const concurrentIsOlder = concurrentRuns.find(run => run.treeHash === this.context.currentRun.treeHash &&
+                run.runNumber < this.context.currentRun.runNumber);
+            if (concurrentIsOlder) {
+                core.info(`Skip execution because the exact same files are concurrently checked in older run ${concurrentIsOlder.htmlUrl}`);
+                return concurrentIsOlder;
+            }
+        }
+        core.info(`Did not find any concurrent workflow runs that justify skipping`);
+    }
+    backtracePathSkipping() {
+        var _a, _b;
+        return __awaiter(this, void 0, void 0, function* () {
+            let commit;
+            let iterSha = this.context.currentRun.commitHash;
+            let distanceToHEAD = 0;
+            const allChangedFiles = [];
+            const pathsFilter = Object.assign(Object.assign({}, this.inputs.pathsFilter), { global: {
+                    paths: this.inputs.paths,
+                    paths_ignore: this.inputs.pathsIgnore,
+                    backtracking: true
+                } });
+            const pathsResult = {};
+            for (const name of Object.keys(pathsFilter)) {
+                pathsResult[name] = { should_skip: 'unknown', backtrack_count: 0 };
+            }
+            do {
+                commit = yield this.fetchCommitDetails(iterSha);
+                if (!commit) {
+                    break;
                 }
-                // Check if backtracking limit has been reached.
-                if ((pathsFilter[name].backtracking === false && distanceToHEAD === 1) ||
-                    pathsFilter[name].backtracking === distanceToHEAD) {
-                    pathsResult[name].should_skip = false;
-                    pathsResult[name].backtrack_count = distanceToHEAD;
-                    core.info(`Stop backtracking for '${name}' because the defined limit has been reached`);
-                    continue;
-                }
-                // Ignorable if all changed files match against ignored paths.
-                if (isCommitPathsIgnored(changedFiles, pathsFilter[name].paths_ignore)) {
-                    core.info(`Commit ${commit.html_url} is path-ignored for '${name}': All of '${changedFiles}' match against patterns '${pathsFilter[name].paths_ignore}'`);
-                    continue;
-                }
-                // Skippable if none of the changed files matches against paths.
-                if (pathsFilter[name].paths.length >= 1) {
-                    const matches = getCommitPathsMatches(changedFiles, pathsFilter[name].paths);
-                    if (matches.length === 0) {
-                        core.info(`Commit ${commit.html_url} is path-skipped for '${name}': None of '${changedFiles}' matches against patterns '${pathsFilter[name].paths}'`);
+                iterSha = ((_a = commit.parents) === null || _a === void 0 ? void 0 : _a.length) ? (_b = commit.parents[0]) === null || _b === void 0 ? void 0 : _b.sha : null;
+                const changedFiles = commit.files
+                    ? commit.files.map(f => f.filename).filter(f => typeof f === 'string')
+                    : [];
+                allChangedFiles.push(changedFiles);
+                const successfulRun = (distanceToHEAD >= 1 &&
+                    this.findSuccessfulDuplicateRun(commit.commit.tree.sha)) ||
+                    undefined;
+                for (const [name, values] of Object.entries(pathsResult)) {
+                    // Only process paths where status has not yet been determined.
+                    if (values.should_skip !== 'unknown')
+                        continue;
+                    // Skip if paths were ignorable or skippable until now and there is a successful run for the current commit.
+                    if (successfulRun) {
+                        pathsResult[name].should_skip = true;
+                        pathsResult[name].skipped_by = successfulRun;
+                        pathsResult[name].backtrack_count = distanceToHEAD;
+                        core.info(`Skip '${name}' because all changes since run ${successfulRun.htmlUrl} are in ignored or skipped paths`);
                         continue;
                     }
-                    else {
-                        pathsResult[name].matched_files = matches;
+                    // Check if backtracking limit has been reached.
+                    if ((pathsFilter[name].backtracking === false && distanceToHEAD === 1) ||
+                        pathsFilter[name].backtracking === distanceToHEAD) {
+                        pathsResult[name].should_skip = false;
+                        pathsResult[name].backtrack_count = distanceToHEAD;
+                        core.info(`Stop backtracking for '${name}' because the defined limit has been reached`);
+                        continue;
                     }
+                    // Ignorable if all changed files match against ignored paths.
+                    if (this.isCommitPathsIgnored(changedFiles, pathsFilter[name].paths_ignore)) {
+                        core.info(`Commit ${commit.html_url} is path-ignored for '${name}': All of '${changedFiles}' match against patterns '${pathsFilter[name].paths_ignore}'`);
+                        continue;
+                    }
+                    // Skippable if none of the changed files matches against paths.
+                    if (pathsFilter[name].paths.length >= 1) {
+                        const matches = this.getCommitPathsMatches(changedFiles, pathsFilter[name].paths);
+                        if (matches.length === 0) {
+                            core.info(`Commit ${commit.html_url} is path-skipped for '${name}': None of '${changedFiles}' matches against patterns '${pathsFilter[name].paths}'`);
+                            continue;
+                        }
+                        else {
+                            pathsResult[name].matched_files = matches;
+                        }
+                    }
+                    // Not ignorable or skippable.
+                    pathsResult[name].should_skip = false;
+                    pathsResult[name].backtrack_count = distanceToHEAD;
+                    core.info(`Stop backtracking for '${name}' at commit ${commit.html_url} because '${changedFiles}' are not skippable against paths '${pathsFilter[name].paths}' or paths_ignore '${pathsFilter[name].paths_ignore}'`);
                 }
-                // Not ignorable or skippable.
-                pathsResult[name].should_skip = false;
-                pathsResult[name].backtrack_count = distanceToHEAD;
-                core.info(`Stop backtracking for '${name}' at commit ${commit.html_url} because '${changedFiles}' are not skippable against paths '${pathsFilter[name].paths}' or paths_ignore '${pathsFilter[name].paths_ignore}'`);
-            }
-            // Should be never reached in practice; we expect that this loop aborts after 1-3 iterations.
-            if (distanceToHEAD++ >= 50) {
-                core.warning('Aborted commit-backtracing due to bad performance - Did you push an excessive number of ignored-path commits?');
-                break;
-            }
-        } while (Object.keys(pathsResult).some(path => pathsResult[path].should_skip === 'unknown'));
-        return { changedFiles: allChangedFiles, pathsResult };
-    });
-}
-function findSuccessfulRun(treeHash, olderRuns) {
-    const matchingRuns = olderRuns.filter(run => run.treeHash === treeHash);
-    const successfulRun = matchingRuns.find(run => {
-        return run.status === 'completed' && run.conclusion === 'success';
-    });
-    return successfulRun;
-}
-const globOptions = {
-    dot: true // Match dotfiles. Otherwise dotfiles are ignored unless a "." is explicitly defined in the pattern.
-};
-function isCommitPathsIgnored(changedFiles, pathsIgnore) {
-    if (pathsIgnore.length === 0) {
-        return false;
+                // Should be never reached in practice; we expect that this loop aborts after 1-3 iterations.
+                if (distanceToHEAD++ >= 50) {
+                    core.warning('Aborted commit-backtracing due to bad performance - Did you push an excessive number of ignored-path commits?');
+                    break;
+                }
+            } while (Object.keys(pathsResult).some(path => pathsResult[path].should_skip === 'unknown'));
+            return { changedFiles: allChangedFiles, pathsResult };
+        });
     }
-    const notIgnoredPaths = micromatch_1.default.not(changedFiles, pathsIgnore, globOptions);
-    return notIgnoredPaths.length === 0;
-}
-function getCommitPathsMatches(changedFiles, paths) {
-    const matches = (0, micromatch_1.default)(changedFiles, paths, globOptions);
-    return matches;
-}
-function fetchCommitDetails(sha, context) {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (!sha) {
-            return null;
+    isCommitPathsIgnored(changedFiles, pathsIgnore) {
+        if (pathsIgnore.length === 0) {
+            return false;
         }
-        try {
-            const res = yield context.octokit.rest.repos.getCommit({
-                owner: context.repoOwner,
-                repo: context.repoName,
-                ref: sha
-            });
-            return res.data;
-        }
-        catch (e) {
-            if (e instanceof Error || typeof e === 'string') {
-                core.warning(e);
+        const notIgnoredPaths = micromatch_1.default.not(changedFiles, pathsIgnore, this.globOptions);
+        return notIgnoredPaths.length === 0;
+    }
+    getCommitPathsMatches(changedFiles, paths) {
+        const matches = (0, micromatch_1.default)(changedFiles, paths, this.globOptions);
+        return matches;
+    }
+    fetchCommitDetails(sha) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!sha) {
+                return null;
             }
-            core.warning(`Failed to retrieve commit ${sha}`);
-            return null;
+            try {
+                const res = yield this.context.octokit.rest.repos.getCommit(Object.assign(Object.assign({}, this.context.repo), { ref: sha }));
+                return res.data;
+            }
+            catch (error) {
+                if (error instanceof Error || typeof error === 'string') {
+                    core.warning(error);
+                }
+                core.warning(`Failed to retrieve commit ${sha}`);
+                return null;
+            }
+        });
+    }
+}
+function main() {
+    var _a, _b, _c;
+    return __awaiter(this, void 0, void 0, function* () {
+        // Get and validate inputs.
+        const token = core.getInput('github_token', { required: true });
+        const inputs = {
+            paths: getStringArrayInput('paths'),
+            pathsIgnore: getStringArrayInput('paths_ignore'),
+            pathsFilter: getPathsFilterInput('paths_filter'),
+            doNotSkip: getDoNotSkipInput('do_not_skip'),
+            concurrentSkipping: getConcurrentSkippingInput('concurrent_skipping'),
+            cancelOthers: (_a = core.getBooleanInput('cancel_others')) !== null && _a !== void 0 ? _a : false,
+            skipAfterSuccessfulDuplicates: (_b = core.getBooleanInput('skip_after_successful_duplicate')) !== null && _b !== void 0 ? _b : true
+        };
+        const repo = github.context.repo;
+        const octokit = github.getOctokit(token);
+        // Get and parse the current workflow run.
+        const { data: apiCurrentRun } = yield octokit.rest.actions.getWorkflowRun(Object.assign(Object.assign({}, repo), { run_id: github.context.runId }));
+        const currentTreeHash = (_c = apiCurrentRun.head_commit) === null || _c === void 0 ? void 0 : _c.tree_id;
+        if (!currentTreeHash) {
+            exitFail(`
+        Could not find the tree hash of run ${apiCurrentRun.id} (Workflow ID: ${apiCurrentRun.workflow_id},
+        Name: ${apiCurrentRun.name}, Head Branch: ${apiCurrentRun.head_branch}, Head SHA: ${apiCurrentRun.head_sha}).
+        This might be a run associated with a headless or removed commit.
+      `);
         }
+        const currentRun = mapWorkflowRun(apiCurrentRun, currentTreeHash);
+        // Fetch list of runs for current workflow.
+        const { data: { workflow_runs: apiAllRuns } } = yield octokit.rest.actions.listWorkflowRuns(Object.assign(Object.assign({}, repo), { workflow_id: currentRun.workflowId, per_page: 100 }));
+        // List with all workflow runs.
+        const allRuns = [];
+        // List with older workflow runs only (used to prevent some nasty race conditions and edge cases).
+        const olderRuns = [];
+        // Check and map all runs.
+        for (const run of apiAllRuns) {
+            // Filter out current run and runs that lack 'head_commit' (most likely runs associated with a headless or removed commit).
+            // See https://github.com/fkirc/skip-duplicate-actions/pull/178.
+            if (run.id !== currentRun.id && run.head_commit) {
+                const mappedRun = mapWorkflowRun(run, run.head_commit.tree_id);
+                // Add to list of all runs.
+                allRuns.push(mappedRun);
+                // Check if run can be added to list of older runs.
+                if (new Date(mappedRun.createdAt).getTime() <
+                    new Date(currentRun.createdAt).getTime()) {
+                    olderRuns.push(mappedRun);
+                }
+            }
+        }
+        const skipDuplicateActions = new SkipDuplicateActions(inputs, {
+            repo,
+            octokit,
+            currentRun,
+            allRuns,
+            olderRuns
+        });
+        yield skipDuplicateActions.run();
     });
 }
+function mapWorkflowRun(run, treeHash) {
+    var _a, _b;
+    return {
+        id: run.id,
+        runNumber: run.run_number,
+        event: run.event,
+        treeHash,
+        commitHash: run.head_sha,
+        status: run.status,
+        conclusion: run.conclusion,
+        htmlUrl: run.html_url,
+        branch: run.head_branch,
+        // Wrong type: 'head_repository' can be null (probably when repo has been removed)
+        repo: (_b = (_a = run.head_repository) === null || _a === void 0 ? void 0 : _a.full_name) !== null && _b !== void 0 ? _b : null,
+        workflowId: run.workflow_id,
+        createdAt: run.created_at
+    };
+}
+/** Set all outputs and exit the action. */
 function exitSuccess(args) {
     core.setOutput('should_skip', args.shouldSkip);
     core.setOutput('reason', args.reason);
     core.setOutput('skipped_by', args.skippedBy || {});
     core.setOutput('changed_files', args.changedFiles || []);
     core.setOutput('paths_result', args.pathsResult || {});
-    return process.exit(0);
+    process.exit(0);
 }
-function formatCliOptions(options) {
-    return `${options.map(o => `"${o}"`).join(', ')}`;
+/** Immediately terminate the action with failing exit code. */
+function exitFail(error) {
+    if (error instanceof Error || typeof error == 'string') {
+        core.error(error);
+    }
+    process.exit(1);
+}
+function getStringArrayInput(name) {
+    const rawInput = core.getInput(name);
+    if (!rawInput) {
+        return [];
+    }
+    try {
+        const array = JSON.parse(rawInput);
+        if (!Array.isArray(array)) {
+            exitFail(`Input '${rawInput}' is not a JSON-array`);
+        }
+        for (const element of array) {
+            if (typeof element !== 'string') {
+                exitFail(`Element '${element}' of input '${rawInput}' is not a string`);
+            }
+        }
+        return array;
+    }
+    catch (error) {
+        if (error instanceof Error || typeof error === 'string') {
+            core.error(error);
+        }
+        exitFail(`Input '${rawInput}' is not a valid JSON`);
+    }
+}
+function getDoNotSkipInput(name) {
+    const rawInput = core.getInput(name);
+    if (!rawInput) {
+        return [];
+    }
+    try {
+        const array = JSON.parse(rawInput);
+        if (!Array.isArray(array)) {
+            exitFail(`Input '${rawInput}' is not a JSON-array`);
+        }
+        for (const element of array) {
+            if (!workflowRunTriggerOptions.includes(element)) {
+                exitFail(`Elements in '${name}' must be one of ${workflowRunTriggerOptions
+                    .map(option => `"${option}"`)
+                    .join(', ')}`);
+            }
+        }
+        return array;
+    }
+    catch (error) {
+        if (error instanceof Error || typeof error === 'string') {
+            core.error(error);
+        }
+        exitFail(`Input '${rawInput}' is not a valid JSON`);
+    }
 }
 function getConcurrentSkippingInput(name) {
     const rawInput = core.getInput(name, { required: true });
@@ -448,58 +457,23 @@ function getConcurrentSkippingInput(name) {
     else if (rawInput.toLowerCase() === 'true') {
         return 'same_content'; // Backwards-compat
     }
-    const options = getConcurrentSkippingOptions();
-    if (options.includes(rawInput)) {
+    if (concurrentSkippingOptions.includes(rawInput)) {
         return rawInput;
     }
     else {
-        logFatal(`'${name}' must be one of ${formatCliOptions(options)}`);
-    }
-}
-function getBooleanInput(name, defaultValue) {
-    const rawInput = core.getInput(name, { required: false });
-    if (!rawInput) {
-        return defaultValue;
-    }
-    if (defaultValue) {
-        return rawInput.toLowerCase() !== 'false';
-    }
-    else {
-        return rawInput.toLowerCase() === 'true';
-    }
-}
-function getStringArrayInput(name) {
-    const rawInput = core.getInput(name, { required: false });
-    if (!rawInput) {
-        return [];
-    }
-    try {
-        const array = JSON.parse(rawInput);
-        if (!Array.isArray(array)) {
-            logFatal(`Input '${rawInput}' is not a JSON-array`);
-        }
-        for (const e of array) {
-            if (typeof e !== 'string') {
-                logFatal(`Element '${e}' of input '${rawInput}' is not a string`);
-            }
-        }
-        return array;
-    }
-    catch (e) {
-        if (e instanceof Error || typeof e === 'string') {
-            core.error(e);
-        }
-        logFatal(`Input '${rawInput}' is not a valid JSON`);
+        exitFail(`'${name}' must be one of ${concurrentSkippingOptions
+            .map(option => `"${option}"`)
+            .join(', ')}`);
     }
 }
 function getPathsFilterInput(name) {
-    const rawInput = core.getInput(name, { required: false });
+    const rawInput = core.getInput(name);
     if (!rawInput) {
         return {};
     }
     try {
         const input = js_yaml_1.default.load(rawInput);
-        // Assign default values
+        // Assign default values to each entry
         const pathsFilter = {};
         for (const [key, value] of Object.entries(input)) {
             pathsFilter[key] = {
@@ -510,16 +484,12 @@ function getPathsFilterInput(name) {
         }
         return pathsFilter;
     }
-    catch (e) {
-        if (e instanceof Error || typeof e === 'string') {
-            core.error(e);
+    catch (error) {
+        if (error instanceof Error || typeof error === 'string') {
+            core.error(error);
         }
-        logFatal(`Input '${rawInput}' is invalid`);
+        exitFail(`Input '${rawInput}' is invalid`);
     }
-}
-function logFatal(msg) {
-    core.setFailed(msg);
-    return process.exit(1);
 }
 main();
 
@@ -2561,7 +2531,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 var universalUserAgent = __nccwpck_require__(5030);
 var beforeAfterHook = __nccwpck_require__(3682);
 var request = __nccwpck_require__(6234);
-var graphql = __nccwpck_require__(8467);
+var graphql = __nccwpck_require__(6442);
 var authToken = __nccwpck_require__(334);
 
 function _objectWithoutPropertiesLoose(source, excluded) {
@@ -2729,6 +2699,132 @@ Octokit.VERSION = VERSION;
 Octokit.plugins = [];
 
 exports.Octokit = Octokit;
+//# sourceMappingURL=index.js.map
+
+
+/***/ }),
+
+/***/ 6442:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+
+var request = __nccwpck_require__(6234);
+var universalUserAgent = __nccwpck_require__(5030);
+
+const VERSION = "4.8.0";
+
+function _buildMessageForResponseErrors(data) {
+  return `Request failed due to following response errors:\n` + data.errors.map(e => ` - ${e.message}`).join("\n");
+}
+
+class GraphqlResponseError extends Error {
+  constructor(request, headers, response) {
+    super(_buildMessageForResponseErrors(response));
+    this.request = request;
+    this.headers = headers;
+    this.response = response;
+    this.name = "GraphqlResponseError"; // Expose the errors and response data in their shorthand properties.
+
+    this.errors = response.errors;
+    this.data = response.data; // Maintains proper stack trace (only available on V8)
+
+    /* istanbul ignore next */
+
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
+    }
+  }
+
+}
+
+const NON_VARIABLE_OPTIONS = ["method", "baseUrl", "url", "headers", "request", "query", "mediaType"];
+const FORBIDDEN_VARIABLE_OPTIONS = ["query", "method", "url"];
+const GHES_V3_SUFFIX_REGEX = /\/api\/v3\/?$/;
+function graphql(request, query, options) {
+  if (options) {
+    if (typeof query === "string" && "query" in options) {
+      return Promise.reject(new Error(`[@octokit/graphql] "query" cannot be used as variable name`));
+    }
+
+    for (const key in options) {
+      if (!FORBIDDEN_VARIABLE_OPTIONS.includes(key)) continue;
+      return Promise.reject(new Error(`[@octokit/graphql] "${key}" cannot be used as variable name`));
+    }
+  }
+
+  const parsedOptions = typeof query === "string" ? Object.assign({
+    query
+  }, options) : query;
+  const requestOptions = Object.keys(parsedOptions).reduce((result, key) => {
+    if (NON_VARIABLE_OPTIONS.includes(key)) {
+      result[key] = parsedOptions[key];
+      return result;
+    }
+
+    if (!result.variables) {
+      result.variables = {};
+    }
+
+    result.variables[key] = parsedOptions[key];
+    return result;
+  }, {}); // workaround for GitHub Enterprise baseUrl set with /api/v3 suffix
+  // https://github.com/octokit/auth-app.js/issues/111#issuecomment-657610451
+
+  const baseUrl = parsedOptions.baseUrl || request.endpoint.DEFAULTS.baseUrl;
+
+  if (GHES_V3_SUFFIX_REGEX.test(baseUrl)) {
+    requestOptions.url = baseUrl.replace(GHES_V3_SUFFIX_REGEX, "/api/graphql");
+  }
+
+  return request(requestOptions).then(response => {
+    if (response.data.errors) {
+      const headers = {};
+
+      for (const key of Object.keys(response.headers)) {
+        headers[key] = response.headers[key];
+      }
+
+      throw new GraphqlResponseError(requestOptions, headers, response.data);
+    }
+
+    return response.data.data;
+  });
+}
+
+function withDefaults(request$1, newDefaults) {
+  const newRequest = request$1.defaults(newDefaults);
+
+  const newApi = (query, options) => {
+    return graphql(newRequest, query, options);
+  };
+
+  return Object.assign(newApi, {
+    defaults: withDefaults.bind(null, newRequest),
+    endpoint: request.request.endpoint
+  });
+}
+
+const graphql$1 = withDefaults(request.request, {
+  headers: {
+    "user-agent": `octokit-graphql.js/${VERSION} ${universalUserAgent.getUserAgent()}`
+  },
+  method: "POST",
+  url: "/graphql"
+});
+function withCustomRequest(customRequest) {
+  return withDefaults(customRequest, {
+    method: "POST",
+    url: "/graphql"
+  });
+}
+
+exports.GraphqlResponseError = GraphqlResponseError;
+exports.graphql = graphql$1;
+exports.withCustomRequest = withCustomRequest;
 //# sourceMappingURL=index.js.map
 
 
@@ -3127,132 +3223,6 @@ const DEFAULTS = {
 const endpoint = withDefaults(null, DEFAULTS);
 
 exports.endpoint = endpoint;
-//# sourceMappingURL=index.js.map
-
-
-/***/ }),
-
-/***/ 8467:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-
-var request = __nccwpck_require__(6234);
-var universalUserAgent = __nccwpck_require__(5030);
-
-const VERSION = "4.8.0";
-
-function _buildMessageForResponseErrors(data) {
-  return `Request failed due to following response errors:\n` + data.errors.map(e => ` - ${e.message}`).join("\n");
-}
-
-class GraphqlResponseError extends Error {
-  constructor(request, headers, response) {
-    super(_buildMessageForResponseErrors(response));
-    this.request = request;
-    this.headers = headers;
-    this.response = response;
-    this.name = "GraphqlResponseError"; // Expose the errors and response data in their shorthand properties.
-
-    this.errors = response.errors;
-    this.data = response.data; // Maintains proper stack trace (only available on V8)
-
-    /* istanbul ignore next */
-
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, this.constructor);
-    }
-  }
-
-}
-
-const NON_VARIABLE_OPTIONS = ["method", "baseUrl", "url", "headers", "request", "query", "mediaType"];
-const FORBIDDEN_VARIABLE_OPTIONS = ["query", "method", "url"];
-const GHES_V3_SUFFIX_REGEX = /\/api\/v3\/?$/;
-function graphql(request, query, options) {
-  if (options) {
-    if (typeof query === "string" && "query" in options) {
-      return Promise.reject(new Error(`[@octokit/graphql] "query" cannot be used as variable name`));
-    }
-
-    for (const key in options) {
-      if (!FORBIDDEN_VARIABLE_OPTIONS.includes(key)) continue;
-      return Promise.reject(new Error(`[@octokit/graphql] "${key}" cannot be used as variable name`));
-    }
-  }
-
-  const parsedOptions = typeof query === "string" ? Object.assign({
-    query
-  }, options) : query;
-  const requestOptions = Object.keys(parsedOptions).reduce((result, key) => {
-    if (NON_VARIABLE_OPTIONS.includes(key)) {
-      result[key] = parsedOptions[key];
-      return result;
-    }
-
-    if (!result.variables) {
-      result.variables = {};
-    }
-
-    result.variables[key] = parsedOptions[key];
-    return result;
-  }, {}); // workaround for GitHub Enterprise baseUrl set with /api/v3 suffix
-  // https://github.com/octokit/auth-app.js/issues/111#issuecomment-657610451
-
-  const baseUrl = parsedOptions.baseUrl || request.endpoint.DEFAULTS.baseUrl;
-
-  if (GHES_V3_SUFFIX_REGEX.test(baseUrl)) {
-    requestOptions.url = baseUrl.replace(GHES_V3_SUFFIX_REGEX, "/api/graphql");
-  }
-
-  return request(requestOptions).then(response => {
-    if (response.data.errors) {
-      const headers = {};
-
-      for (const key of Object.keys(response.headers)) {
-        headers[key] = response.headers[key];
-      }
-
-      throw new GraphqlResponseError(requestOptions, headers, response.data);
-    }
-
-    return response.data.data;
-  });
-}
-
-function withDefaults(request$1, newDefaults) {
-  const newRequest = request$1.defaults(newDefaults);
-
-  const newApi = (query, options) => {
-    return graphql(newRequest, query, options);
-  };
-
-  return Object.assign(newApi, {
-    defaults: withDefaults.bind(null, newRequest),
-    endpoint: request.request.endpoint
-  });
-}
-
-const graphql$1 = withDefaults(request.request, {
-  headers: {
-    "user-agent": `octokit-graphql.js/${VERSION} ${universalUserAgent.getUserAgent()}`
-  },
-  method: "POST",
-  url: "/graphql"
-});
-function withCustomRequest(customRequest) {
-  return withDefaults(customRequest, {
-    method: "POST",
-    url: "/graphql"
-  });
-}
-
-exports.GraphqlResponseError = GraphqlResponseError;
-exports.graphql = graphql$1;
-exports.withCustomRequest = withCustomRequest;
 //# sourceMappingURL=index.js.map
 
 
