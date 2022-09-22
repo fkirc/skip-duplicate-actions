@@ -16,7 +16,8 @@ const workflowRunTriggerOptions = [
   'pull_request',
   'push',
   'workflow_dispatch',
-  'schedule'
+  'schedule',
+  'release'
 ] as const
 type WorkflowRunTrigger = typeof workflowRunTriggerOptions[number]
 

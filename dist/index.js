@@ -50,7 +50,8 @@ const workflowRunTriggerOptions = [
     'pull_request',
     'push',
     'workflow_dispatch',
-    'schedule'
+    'schedule',
+    'release'
 ];
 const concurrentSkippingOptions = [
     'always',
