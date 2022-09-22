@@ -100,6 +100,7 @@ jobs:
           cancel_others: 'true'
           concurrent_skipping: 'outdated_runs'
           skip_after_successful_duplicate: 'true'
+          # Test 'do_not_skip' with 'pull_request'
           do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
 
       - name: Simulate task
