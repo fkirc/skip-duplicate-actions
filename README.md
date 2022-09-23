@@ -267,7 +267,7 @@ jobs:
 
   main_job:
     needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    if: needs.pre_job.outputs.should_skip != 'true'
     runs-on: ubuntu-latest
     steps:
       - run: echo "Running slow tests..." && sleep 30
@@ -288,7 +288,7 @@ jobs:
         with:
           cancel_others: 'false'
           paths: '["src/**", "dist/**"]'
-      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      - if: steps.skip_check.outputs.should_skip != 'true'
         run: |
           echo "Run only if src/ or dist/ changed..." && sleep 30
           echo "Do other stuff..."
@@ -328,10 +328,10 @@ jobs:
     # been found) 'paths_result' outputs an empty object ('{}'). This can be easily intercepted in the if condition of a job
     # by checking the result of the "global" 'should_skip' output first.
     if: needs.pre_job.outputs.should_skip != 'true' || !fromJSON(needs.pre_job.outputs.paths_result).frontend.should_skip
-    ...
+    # ...
 
   backend:
-    ...
+    # ...
 ```
 
 ## How does it work?
