@@ -103,12 +103,12 @@ A YAML-string with named [`paths_ignore`](#paths_ignore) / [`paths`](#paths) pat
 ```yaml
 frontend:
   paths_ignore:
-    - 'frontend/docs/**/*'
+    - 'frontend/docs/**'
   paths:
-    - 'frontend/**/*'
+    - 'frontend/**'
 backend:
   paths:
-    - 'backend/**/*'
+    - 'backend/**'
   ### Here you can optionally control/limit backtracking
   # Boolean or number (default: true)
   # 'false' means disable backtracking completely
@@ -313,12 +313,12 @@ jobs:
           paths_filter: |
             frontend:
               paths_ignore:
-                - 'frontend/docs/**/*'
+                - 'frontend/docs/**'
               paths:
-                - 'frontend/**/*'
+                - 'frontend/**'
             backend:
               paths:
-                - 'backend/**/*'
+                - 'backend/**'
           # Can be mixed with the "global" 'paths_ignore' / 'paths' options, for example:
           # paths_ignore: '["**/README.md"]'
 
