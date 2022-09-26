@@ -393,7 +393,8 @@ function mapWorkflowRun(run, treeHash) {
 function exitSuccess(args) {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
-        const summaryTable = [
+        const summary = [
+            '<h2><a href="https://github.com/fkirc/skip-duplicate-actions">Skip Duplicate Actions</a></h2>',
             '<table>',
             '<tr>',
             '<td>Should Skip</td>',
@@ -405,10 +406,10 @@ function exitSuccess(args) {
             '</tr>'
         ];
         if (args.skippedBy) {
-            summaryTable.push('<tr>', '<td>Skipped By</td>', `<td><a href="${args.skippedBy.htmlUrl}">${args.skippedBy.runNumber}</a></td>`, '</tr>');
+            summary.push('<tr>', '<td>Skipped By</td>', `<td><a href="${args.skippedBy.htmlUrl}">${args.skippedBy.runNumber}</a></td>`, '</tr>');
         }
         if (args.pathsResult) {
-            summaryTable.push('<tr>', '<td>Paths Result</td>', `<td><pre lang="json">${JSON.stringify(args.pathsResult, null, 2)}</pre></td>`, '</tr>');
+            summary.push('<tr>', '<td>Paths Result</td>', `<td><pre lang="json">${JSON.stringify(args.pathsResult, null, 2)}</pre></td>`, '</tr>');
         }
         if (args.changedFiles) {
             const changedFiles = args.changedFiles
@@ -417,13 +418,10 @@ function exitSuccess(args) {
                 .map(file => `<li>${file}</li>`)
                 .join('')}</ul>`)
                 .join('');
-            summaryTable.push('<tr>', '<td>Changed Files</td>', `<td>${changedFiles}</td>`, '</tr>');
+            summary.push('<tr>', '<td>Changed Files</td>', `<td>${changedFiles}</td>`, '</tr>');
         }
-        summaryTable.push('</table>');
-        yield core.summary
-            .addHeading('skip-duplicate-actions', 2)
-            .addRaw(summaryTable.join(''))
-            .write();
+        summary.push('</table>');
+        yield core.summary.addRaw(summary.join('')).write();
         core.setOutput('should_skip', args.shouldSkip);
         core.setOutput('reason', args.reason);
         core.setOutput('skipped_by', args.skippedBy || {});

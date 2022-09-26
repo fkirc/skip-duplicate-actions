@@ -546,7 +546,8 @@ async function exitSuccess(args: {
   pathsResult?: PathsResult
   changedFiles?: ChangedFiles
 }): Promise<never> {
-  const summaryTable = [
+  const summary = [
+    '<h2><a href="https://github.com/fkirc/skip-duplicate-actions">Skip Duplicate Actions</a></h2>',
     '<table>',
     '<tr>',
     '<td>Should Skip</td>',
@@ -558,7 +559,7 @@ async function exitSuccess(args: {
     '</tr>'
   ]
   if (args.skippedBy) {
-    summaryTable.push(
+    summary.push(
       '<tr>',
       '<td>Skipped By</td>',
       `<td><a href="${args.skippedBy.htmlUrl}">${args.skippedBy.runNumber}</a></td>`,
@@ -566,7 +567,7 @@ async function exitSuccess(args: {
     )
   }
   if (args.pathsResult) {
-    summaryTable.push(
+    summary.push(
       '<tr>',
       '<td>Paths Result</td>',
       `<td><pre lang="json">${JSON.stringify(
@@ -587,18 +588,15 @@ async function exitSuccess(args: {
             .join('')}</ul>`
       )
       .join('')
-    summaryTable.push(
+    summary.push(
       '<tr>',
       '<td>Changed Files</td>',
       `<td>${changedFiles}</td>`,
       '</tr>'
     )
   }
-  summaryTable.push('</table>')
-  await core.summary
-    .addHeading('skip-duplicate-actions', 2)
-    .addRaw(summaryTable.join(''))
-    .write()
+  summary.push('</table>')
+  await core.summary.addRaw(summary.join('')).write()
 
   core.setOutput('should_skip', args.shouldSkip)
   core.setOutput('reason', args.reason)
