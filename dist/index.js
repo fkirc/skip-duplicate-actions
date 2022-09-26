@@ -412,7 +412,7 @@ function exitSuccess(args) {
         }
         if (args.changedFiles) {
             const changedFiles = args.changedFiles
-                .map(commit => `<a href="${commit.htmlUrl}">${commit.sha}</a>:
+                .map(commit => `<a href="${commit.htmlUrl}">${commit.sha.substring(0, 7)}</a>:
           <ul>${commit.changedFiles
                 .map(file => `<li>${file}</li>`)
                 .join('')}</ul>`)

@@ -581,7 +581,7 @@ async function exitSuccess(args: {
     const changedFiles = args.changedFiles
       .map(
         commit =>
-          `<a href="${commit.htmlUrl}">${commit.sha}</a>:
+          `<a href="${commit.htmlUrl}">${commit.sha.substring(0, 7)}</a>:
           <ul>${commit.changedFiles
             .map(file => `<li>${file}</li>`)
             .join('')}</ul>`
