@@ -77,7 +77,7 @@ class SkipDuplicateActions {
             // Abort early if current run has been triggered by an event that should never be skipped.
             if (this.inputs.doNotSkip.includes(this.context.currentRun.event)) {
                 core.info(`Do not skip execution because the workflow was triggered with '${this.context.currentRun.event}'`);
-                exitSuccess({
+                yield exitSuccess({
                     shouldSkip: false,
                     reason: 'do_not_skip'
                 });
@@ -87,7 +87,7 @@ class SkipDuplicateActions {
                 const successfulDuplicateRun = this.findSuccessfulDuplicateRun(this.context.currentRun.treeHash);
                 if (successfulDuplicateRun) {
                     core.info(`Skip execution because the exact same files have been successfully checked in run ${successfulDuplicateRun.htmlUrl}`);
-                    exitSuccess({
+                    yield exitSuccess({
                         shouldSkip: true,
                         reason: 'skip_after_successful_duplicate',
                         skippedBy: successfulDuplicateRun
@@ -98,7 +98,7 @@ class SkipDuplicateActions {
             if (this.inputs.concurrentSkipping !== 'never') {
                 const concurrentRun = this.detectConcurrentRuns();
                 if (concurrentRun) {
-                    exitSuccess({
+                    yield exitSuccess({
                         shouldSkip: true,
                         reason: 'concurrent_skipping',
                         skippedBy: concurrentRun
@@ -110,19 +110,19 @@ class SkipDuplicateActions {
                 this.inputs.pathsIgnore.length >= 1 ||
                 Object.keys(this.inputs.pathsFilter).length >= 1) {
                 const { changedFiles, pathsResult } = yield this.backtracePathSkipping();
-                exitSuccess({
+                yield exitSuccess({
                     shouldSkip: pathsResult.global.should_skip === 'unknown'
                         ? false
                         : pathsResult.global.should_skip,
                     reason: 'paths',
                     skippedBy: pathsResult.global.skipped_by,
-                    changedFiles,
-                    pathsResult
+                    pathsResult,
+                    changedFiles
                 });
             }
             // Do not skip otherwise.
             core.info('Do not skip execution because we did not find a transferable run');
-            exitSuccess({
+            yield exitSuccess({
                 shouldSkip: false,
                 reason: 'no_transferable_run'
             });
@@ -226,7 +226,11 @@ class SkipDuplicateActions {
                         .map(file => file.filename)
                         .filter(file => typeof file === 'string')
                     : [];
-                allChangedFiles.push(changedFiles);
+                allChangedFiles.push({
+                    sha: commit.sha,
+                    htmlUrl: commit.html_url,
+                    changedFiles
+                });
                 const successfulRun = (distanceToHEAD >= 1 &&
                     this.findSuccessfulDuplicateRun(commit.commit.tree.sha)) ||
                     undefined;
@@ -277,7 +281,7 @@ class SkipDuplicateActions {
                     break;
                 }
             } while (Object.keys(pathsResult).some(path => pathsResult[path].should_skip === 'unknown'));
-            return { changedFiles: allChangedFiles, pathsResult };
+            return { pathsResult, changedFiles: allChangedFiles };
         });
     }
     isCommitPathsIgnored(changedFiles, pathsIgnore) {
@@ -387,12 +391,46 @@ function mapWorkflowRun(run, treeHash) {
 }
 /** Set all outputs and exit the action. */
 function exitSuccess(args) {
-    core.setOutput('should_skip', args.shouldSkip);
-    core.setOutput('reason', args.reason);
-    core.setOutput('skipped_by', args.skippedBy || {});
-    core.setOutput('changed_files', args.changedFiles || []);
-    core.setOutput('paths_result', args.pathsResult || {});
-    process.exit(0);
+    var _a;
+    return __awaiter(this, void 0, void 0, function* () {
+        const summaryTable = [
+            '<table>',
+            '<tr>',
+            '<td>Should Skip</td>',
+            `<td>${args.shouldSkip ? 'Yes' : 'No'}</td>`,
+            '</tr>',
+            '<tr>',
+            '<td>Reason</td>',
+            `<td><i>${args.reason}</i></td>`,
+            '</tr>'
+        ];
+        if (args.skippedBy) {
+            summaryTable.push('<tr>', '<td>Skipped by</td>', `<td>[${args.skippedBy.runNumber}](${args.skippedBy.htmlUrl})</td>`, '</tr>');
+        }
+        if (args.pathsResult) {
+            summaryTable.push('<tr>', '<td>Paths Result</td>', `<td><pre lang="json">${JSON.stringify(args.pathsResult, null, 2)}</pre></td>`, '</tr>');
+        }
+        if (args.changedFiles) {
+            const changedFiles = args.changedFiles
+                .map(commit => `<a href="${commit.htmlUrl}">${commit.sha}</a>:
+          <ul>${commit.changedFiles
+                .map(file => `<li>${file}</li>`)
+                .join('')}</ul>`)
+                .join('');
+            summaryTable.push('<tr>', '<td>Changed Files</td>', `<td>${changedFiles}</td>`, '</tr>');
+        }
+        summaryTable.push('</table>');
+        yield core.summary
+            .addHeading('skip-duplicate-actions', 2)
+            .addRaw(summaryTable.join(''))
+            .write();
+        core.setOutput('should_skip', args.shouldSkip);
+        core.setOutput('reason', args.reason);
+        core.setOutput('skipped_by', args.skippedBy || {});
+        core.setOutput('paths_result', args.pathsResult || {});
+        core.setOutput('changed_files', ((_a = args.changedFiles) === null || _a === void 0 ? void 0 : _a.map(commit => commit.changedFiles)) || []);
+        process.exit(0);
+    });
 }
 /** Immediately terminate the action with failing exit code. */
 function exitFail(error) {
@@ -1572,8 +1610,9 @@ exports.context = new Context.Context();
  * @param     token    the repo PAT or GITHUB_TOKEN
  * @param     options  other options to set
  */
-function getOctokit(token, options) {
-    return new utils_1.GitHub(utils_1.getOctokitOptions(token, options));
+function getOctokit(token, options, ...additionalPlugins) {
+    const GitHubWithPlugins = utils_1.GitHub.plugin(...additionalPlugins);
+    return new GitHubWithPlugins(utils_1.getOctokitOptions(token, options));
 }
 exports.getOctokit = getOctokit;
 //# sourceMappingURL=github.js.map
@@ -2533,7 +2572,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 var universalUserAgent = __nccwpck_require__(5030);
 var beforeAfterHook = __nccwpck_require__(3682);
 var request = __nccwpck_require__(6234);
-var graphql = __nccwpck_require__(6442);
+var graphql = __nccwpck_require__(8467);
 var authToken = __nccwpck_require__(334);
 
 function _objectWithoutPropertiesLoose(source, excluded) {
@@ -2701,132 +2740,6 @@ Octokit.VERSION = VERSION;
 Octokit.plugins = [];
 
 exports.Octokit = Octokit;
-//# sourceMappingURL=index.js.map
-
-
-/***/ }),
-
-/***/ 6442:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-
-var request = __nccwpck_require__(6234);
-var universalUserAgent = __nccwpck_require__(5030);
-
-const VERSION = "4.8.0";
-
-function _buildMessageForResponseErrors(data) {
-  return `Request failed due to following response errors:\n` + data.errors.map(e => ` - ${e.message}`).join("\n");
-}
-
-class GraphqlResponseError extends Error {
-  constructor(request, headers, response) {
-    super(_buildMessageForResponseErrors(response));
-    this.request = request;
-    this.headers = headers;
-    this.response = response;
-    this.name = "GraphqlResponseError"; // Expose the errors and response data in their shorthand properties.
-
-    this.errors = response.errors;
-    this.data = response.data; // Maintains proper stack trace (only available on V8)
-
-    /* istanbul ignore next */
-
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, this.constructor);
-    }
-  }
-
-}
-
-const NON_VARIABLE_OPTIONS = ["method", "baseUrl", "url", "headers", "request", "query", "mediaType"];
-const FORBIDDEN_VARIABLE_OPTIONS = ["query", "method", "url"];
-const GHES_V3_SUFFIX_REGEX = /\/api\/v3\/?$/;
-function graphql(request, query, options) {
-  if (options) {
-    if (typeof query === "string" && "query" in options) {
-      return Promise.reject(new Error(`[@octokit/graphql] "query" cannot be used as variable name`));
-    }
-
-    for (const key in options) {
-      if (!FORBIDDEN_VARIABLE_OPTIONS.includes(key)) continue;
-      return Promise.reject(new Error(`[@octokit/graphql] "${key}" cannot be used as variable name`));
-    }
-  }
-
-  const parsedOptions = typeof query === "string" ? Object.assign({
-    query
-  }, options) : query;
-  const requestOptions = Object.keys(parsedOptions).reduce((result, key) => {
-    if (NON_VARIABLE_OPTIONS.includes(key)) {
-      result[key] = parsedOptions[key];
-      return result;
-    }
-
-    if (!result.variables) {
-      result.variables = {};
-    }
-
-    result.variables[key] = parsedOptions[key];
-    return result;
-  }, {}); // workaround for GitHub Enterprise baseUrl set with /api/v3 suffix
-  // https://github.com/octokit/auth-app.js/issues/111#issuecomment-657610451
-
-  const baseUrl = parsedOptions.baseUrl || request.endpoint.DEFAULTS.baseUrl;
-
-  if (GHES_V3_SUFFIX_REGEX.test(baseUrl)) {
-    requestOptions.url = baseUrl.replace(GHES_V3_SUFFIX_REGEX, "/api/graphql");
-  }
-
-  return request(requestOptions).then(response => {
-    if (response.data.errors) {
-      const headers = {};
-
-      for (const key of Object.keys(response.headers)) {
-        headers[key] = response.headers[key];
-      }
-
-      throw new GraphqlResponseError(requestOptions, headers, response.data);
-    }
-
-    return response.data.data;
-  });
-}
-
-function withDefaults(request$1, newDefaults) {
-  const newRequest = request$1.defaults(newDefaults);
-
-  const newApi = (query, options) => {
-    return graphql(newRequest, query, options);
-  };
-
-  return Object.assign(newApi, {
-    defaults: withDefaults.bind(null, newRequest),
-    endpoint: request.request.endpoint
-  });
-}
-
-const graphql$1 = withDefaults(request.request, {
-  headers: {
-    "user-agent": `octokit-graphql.js/${VERSION} ${universalUserAgent.getUserAgent()}`
-  },
-  method: "POST",
-  url: "/graphql"
-});
-function withCustomRequest(customRequest) {
-  return withDefaults(customRequest, {
-    method: "POST",
-    url: "/graphql"
-  });
-}
-
-exports.GraphqlResponseError = GraphqlResponseError;
-exports.graphql = graphql$1;
-exports.withCustomRequest = withCustomRequest;
 //# sourceMappingURL=index.js.map
 
 
@@ -3225,6 +3138,132 @@ const DEFAULTS = {
 const endpoint = withDefaults(null, DEFAULTS);
 
 exports.endpoint = endpoint;
+//# sourceMappingURL=index.js.map
+
+
+/***/ }),
+
+/***/ 8467:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+
+var request = __nccwpck_require__(6234);
+var universalUserAgent = __nccwpck_require__(5030);
+
+const VERSION = "4.8.0";
+
+function _buildMessageForResponseErrors(data) {
+  return `Request failed due to following response errors:\n` + data.errors.map(e => ` - ${e.message}`).join("\n");
+}
+
+class GraphqlResponseError extends Error {
+  constructor(request, headers, response) {
+    super(_buildMessageForResponseErrors(response));
+    this.request = request;
+    this.headers = headers;
+    this.response = response;
+    this.name = "GraphqlResponseError"; // Expose the errors and response data in their shorthand properties.
+
+    this.errors = response.errors;
+    this.data = response.data; // Maintains proper stack trace (only available on V8)
+
+    /* istanbul ignore next */
+
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
+    }
+  }
+
+}
+
+const NON_VARIABLE_OPTIONS = ["method", "baseUrl", "url", "headers", "request", "query", "mediaType"];
+const FORBIDDEN_VARIABLE_OPTIONS = ["query", "method", "url"];
+const GHES_V3_SUFFIX_REGEX = /\/api\/v3\/?$/;
+function graphql(request, query, options) {
+  if (options) {
+    if (typeof query === "string" && "query" in options) {
+      return Promise.reject(new Error(`[@octokit/graphql] "query" cannot be used as variable name`));
+    }
+
+    for (const key in options) {
+      if (!FORBIDDEN_VARIABLE_OPTIONS.includes(key)) continue;
+      return Promise.reject(new Error(`[@octokit/graphql] "${key}" cannot be used as variable name`));
+    }
+  }
+
+  const parsedOptions = typeof query === "string" ? Object.assign({
+    query
+  }, options) : query;
+  const requestOptions = Object.keys(parsedOptions).reduce((result, key) => {
+    if (NON_VARIABLE_OPTIONS.includes(key)) {
+      result[key] = parsedOptions[key];
+      return result;
+    }
+
+    if (!result.variables) {
+      result.variables = {};
+    }
+
+    result.variables[key] = parsedOptions[key];
+    return result;
+  }, {}); // workaround for GitHub Enterprise baseUrl set with /api/v3 suffix
+  // https://github.com/octokit/auth-app.js/issues/111#issuecomment-657610451
+
+  const baseUrl = parsedOptions.baseUrl || request.endpoint.DEFAULTS.baseUrl;
+
+  if (GHES_V3_SUFFIX_REGEX.test(baseUrl)) {
+    requestOptions.url = baseUrl.replace(GHES_V3_SUFFIX_REGEX, "/api/graphql");
+  }
+
+  return request(requestOptions).then(response => {
+    if (response.data.errors) {
+      const headers = {};
+
+      for (const key of Object.keys(response.headers)) {
+        headers[key] = response.headers[key];
+      }
+
+      throw new GraphqlResponseError(requestOptions, headers, response.data);
+    }
+
+    return response.data.data;
+  });
+}
+
+function withDefaults(request$1, newDefaults) {
+  const newRequest = request$1.defaults(newDefaults);
+
+  const newApi = (query, options) => {
+    return graphql(newRequest, query, options);
+  };
+
+  return Object.assign(newApi, {
+    defaults: withDefaults.bind(null, newRequest),
+    endpoint: request.request.endpoint
+  });
+}
+
+const graphql$1 = withDefaults(request.request, {
+  headers: {
+    "user-agent": `octokit-graphql.js/${VERSION} ${universalUserAgent.getUserAgent()}`
+  },
+  method: "POST",
+  url: "/graphql"
+});
+function withCustomRequest(customRequest) {
+  return withDefaults(customRequest, {
+    method: "POST",
+    url: "/graphql"
+  });
+}
+
+exports.GraphqlResponseError = GraphqlResponseError;
+exports.graphql = graphql$1;
+exports.withCustomRequest = withCustomRequest;
 //# sourceMappingURL=index.js.map
 
 
