@@ -346,23 +346,21 @@ After querying such workflow runs, it will compare them with the current workflo
 ## How does path-skipping work?
 
 As mentioned above, `skip-duplicate-actions` provides a path-skipping functionality that is somewhat similar to GitHub's native `paths` and `paths_ignore` functionality.
-However, path-skipping is not entirely trivial because there exist multiple options on how to do path-skipping.
-Depending on your project, you might want to choose one of the following options:
+However, path-skipping is not entirely trivial because there exist multiple options on how to do path-skipping:
 
 ### Option 1: Only look at the "current" commit
 
-This is the thing that GitHub is currently doing, and I consider it as insufficient because it doesn't work for "required" checks.
-Another problem is that the outcomes can be heavily dependent on which commits were pushed at which time, instead of the actual content that was pushed.
+This is the thing that GitHub is currently doing, and we consider it as insufficient because it does not work for "required" checks.
+Another problem is that the outcomes can be heavily dependent on the pushing-sequence of commits.
 
 ### Option 2: Look at Pull-Request-diffs
 
-This option is probably implemented by https://github.com/dorny/paths-filter.
-PR-diffs are simple to understand, but not everyone is using PRs for everything, so this is not an option for everyone.
+PR-diffs are simple to understand, but they only work after opening a PR, not immediately after pushing a feature-branch.
 
 ### Option 3: Look for successful checks of previous commits
 
-This is my personal favorite option and this is implemented by `skip-duplicate-actions`.
-An advantage is that this works regardless of whether you are using PRs or feature-branches, and of course it also works for "required" checks.
+This option is implemented by `skip-duplicate-actions`.
+An advantage is that this works regardless of whether you are using PRs or raw feature-branches, and of course it also works for "required" checks.
 Internally, `skip-duplicate-actions` uses the [Repos Commit API](https://docs.github.com/en/rest/reference/repos#get-a-commit) to perform an efficient backtracking-algorithm for paths-skipping-detection.
 
 ## Maintainers
