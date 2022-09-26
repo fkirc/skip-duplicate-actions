@@ -46,6 +46,8 @@ interface WorkflowRun {
   createdAt: string
 }
 
+type ChangedFiles = {sha: string; htmlUrl: string; changedFiles: string[]}[]
+
 type PathsFilter = Record<
   string,
   {
@@ -115,7 +117,7 @@ class SkipDuplicateActions {
       core.info(
         `Do not skip execution because the workflow was triggered with '${this.context.currentRun.event}'`
       )
-      exitSuccess({
+      await exitSuccess({
         shouldSkip: false,
         reason: 'do_not_skip'
       })
@@ -130,7 +132,7 @@ class SkipDuplicateActions {
         core.info(
           `Skip execution because the exact same files have been successfully checked in run ${successfulDuplicateRun.htmlUrl}`
         )
-        exitSuccess({
+        await exitSuccess({
           shouldSkip: true,
           reason: 'skip_after_successful_duplicate',
           skippedBy: successfulDuplicateRun
@@ -142,7 +144,7 @@ class SkipDuplicateActions {
     if (this.inputs.concurrentSkipping !== 'never') {
       const concurrentRun = this.detectConcurrentRuns()
       if (concurrentRun) {
-        exitSuccess({
+        await exitSuccess({
           shouldSkip: true,
           reason: 'concurrent_skipping',
           skippedBy: concurrentRun
@@ -157,15 +159,15 @@ class SkipDuplicateActions {
       Object.keys(this.inputs.pathsFilter).length >= 1
     ) {
       const {changedFiles, pathsResult} = await this.backtracePathSkipping()
-      exitSuccess({
+      await exitSuccess({
         shouldSkip:
           pathsResult.global.should_skip === 'unknown'
             ? false
             : pathsResult.global.should_skip,
         reason: 'paths',
         skippedBy: pathsResult.global.skipped_by,
-        changedFiles,
-        pathsResult
+        pathsResult,
+        changedFiles
       })
     }
 
@@ -173,7 +175,7 @@ class SkipDuplicateActions {
     core.info(
       'Do not skip execution because we did not find a transferable run'
     )
-    exitSuccess({
+    await exitSuccess({
       shouldSkip: false,
       reason: 'no_transferable_run'
     })
@@ -277,13 +279,13 @@ class SkipDuplicateActions {
   }
 
   async backtracePathSkipping(): Promise<{
-    changedFiles: string[][]
     pathsResult: PathsResult
+    changedFiles: ChangedFiles
   }> {
     let commit: ApiCommit | null
     let iterSha: string | null = this.context.currentRun.commitHash
     let distanceToHEAD = 0
-    const allChangedFiles: string[][] = []
+    const allChangedFiles: ChangedFiles = []
 
     const pathsFilter: PathsFilter = {
       ...this.inputs.pathsFilter,
@@ -310,7 +312,11 @@ class SkipDuplicateActions {
             .map(file => file.filename)
             .filter(file => typeof file === 'string')
         : []
-      allChangedFiles.push(changedFiles)
+      allChangedFiles.push({
+        sha: commit.sha,
+        htmlUrl: commit.html_url,
+        changedFiles
+      })
 
       const successfulRun =
         (distanceToHEAD >= 1 &&
@@ -395,7 +401,7 @@ class SkipDuplicateActions {
       )
     )
 
-    return {changedFiles: allChangedFiles, pathsResult}
+    return {pathsResult, changedFiles: allChangedFiles}
   }
 
   isCommitPathsIgnored(changedFiles: string[], pathsIgnore: string[]): boolean {
@@ -533,18 +539,73 @@ function mapWorkflowRun(
 }
 
 /** Set all outputs and exit the action. */
-function exitSuccess(args: {
+async function exitSuccess(args: {
   shouldSkip: boolean
   reason: string
   skippedBy?: WorkflowRun
-  changedFiles?: string[][]
   pathsResult?: PathsResult
-}): never {
+  changedFiles?: ChangedFiles
+}): Promise<never> {
+  const summary = [
+    '<h2><a href="https://github.com/fkirc/skip-duplicate-actions">Skip Duplicate Actions</a></h2>',
+    '<table>',
+    '<tr>',
+    '<td>Should Skip</td>',
+    `<td>${args.shouldSkip ? 'Yes' : 'No'} (<i>${args.shouldSkip}</i>)</td>`,
+    '</tr>',
+    '<tr>',
+    '<td>Reason</td>',
+    `<td><i>${args.reason}</i></td>`,
+    '</tr>'
+  ]
+  if (args.skippedBy) {
+    summary.push(
+      '<tr>',
+      '<td>Skipped By</td>',
+      `<td><a href="${args.skippedBy.htmlUrl}">${args.skippedBy.runNumber}</a></td>`,
+      '</tr>'
+    )
+  }
+  if (args.pathsResult) {
+    summary.push(
+      '<tr>',
+      '<td>Paths Result</td>',
+      `<td><pre lang="json">${JSON.stringify(
+        args.pathsResult,
+        null,
+        2
+      )}</pre></td>`,
+      '</tr>'
+    )
+  }
+  if (args.changedFiles) {
+    const changedFiles = args.changedFiles
+      .map(
+        commit =>
+          `<a href="${commit.htmlUrl}">${commit.sha.substring(0, 7)}</a>:
+          <ul>${commit.changedFiles
+            .map(file => `<li>${file}</li>`)
+            .join('')}</ul>`
+      )
+      .join('')
+    summary.push(
+      '<tr>',
+      '<td>Changed Files</td>',
+      `<td>${changedFiles}</td>`,
+      '</tr>'
+    )
+  }
+  summary.push('</table>')
+  await core.summary.addRaw(summary.join('')).write()
+
   core.setOutput('should_skip', args.shouldSkip)
   core.setOutput('reason', args.reason)
   core.setOutput('skipped_by', args.skippedBy || {})
-  core.setOutput('changed_files', args.changedFiles || [])
   core.setOutput('paths_result', args.pathsResult || {})
+  core.setOutput(
+    'changed_files',
+    args.changedFiles?.map(commit => commit.changedFiles) || []
+  )
   process.exit(0)
 }
 
