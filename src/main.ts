@@ -550,7 +550,7 @@ async function exitSuccess(args: {
     '<table>',
     '<tr>',
     '<td>Should Skip</td>',
-    `<td>${args.shouldSkip ? 'Yes' : 'No'}</td>`,
+    `<td>${args.shouldSkip ? 'Yes' : 'No'} (<i>${args.shouldSkip}</i>)</td>`,
     '</tr>',
     '<tr>',
     '<td>Reason</td>',
@@ -560,8 +560,8 @@ async function exitSuccess(args: {
   if (args.skippedBy) {
     summaryTable.push(
       '<tr>',
-      '<td>Skipped by</td>',
-      `<td>[${args.skippedBy.runNumber}](${args.skippedBy.htmlUrl})</td>`,
+      '<td>Skipped By</td>',
+      `<td><a href="${args.skippedBy.htmlUrl}">${args.skippedBy.runNumber}</a></td>`,
       '</tr>'
     )
   }

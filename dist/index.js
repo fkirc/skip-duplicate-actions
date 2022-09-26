@@ -397,7 +397,7 @@ function exitSuccess(args) {
             '<table>',
             '<tr>',
             '<td>Should Skip</td>',
-            `<td>${args.shouldSkip ? 'Yes' : 'No'}</td>`,
+            `<td>${args.shouldSkip ? 'Yes' : 'No'} (<i>${args.shouldSkip}</i>)</td>`,
             '</tr>',
             '<tr>',
             '<td>Reason</td>',
@@ -405,7 +405,7 @@ function exitSuccess(args) {
             '</tr>'
         ];
         if (args.skippedBy) {
-            summaryTable.push('<tr>', '<td>Skipped by</td>', `<td>[${args.skippedBy.runNumber}](${args.skippedBy.htmlUrl})</td>`, '</tr>');
+            summaryTable.push('<tr>', '<td>Skipped By</td>', `<td><a href="${args.skippedBy.htmlUrl}">${args.skippedBy.runNumber}</a></td>`, '</tr>');
         }
         if (args.pathsResult) {
             summaryTable.push('<tr>', '<td>Paths Result</td>', `<td><pre lang="json">${JSON.stringify(args.pathsResult, null, 2)}</pre></td>`, '</tr>');
