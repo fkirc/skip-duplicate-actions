@@ -37,28 +37,6 @@ jobs:
           skip_after_successful_duplicate: 'true'
           paths_ignore: '["**/README.md", "**/docs/**"]'
 
-      - name: Print outputs
-        run: |
-          echo '::group::should_skip'
-          echo '${{ steps.skip_check.outputs.should_skip }}'
-          echo '::endgroup::'
-
-          echo '::group::reason'
-          echo '${{ steps.skip_check.outputs.reason }}'
-          echo '::endgroup::'
-
-          echo '::group::skipped_by'
-          echo '${{ toJSON(fromJSON(steps.skip_check.outputs.skipped_by)) }}'
-          echo '::endgroup::'
-
-          echo '::group::paths_result'
-          echo '${{ toJSON(fromJSON(steps.skip_check.outputs.paths_result)) }}'
-          echo '::endgroup::'
-
-          echo '::group::changed_files'
-          echo '${{ toJSON(fromJSON(steps.skip_check.outputs.changed_files)) }}'
-          echo '::endgroup::'
-
   main_job:
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
