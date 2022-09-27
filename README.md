@@ -363,6 +363,47 @@ This option is implemented by `skip-duplicate-actions`.
 An advantage is that this works regardless of whether you are using PRs or raw feature-branches, and of course it also works for "required" checks.
 Internally, `skip-duplicate-actions` uses the [Repos Commit API](https://docs.github.com/en/rest/reference/repos#get-a-commit) to perform an efficient backtracking-algorithm for paths-skipping-detection.
 
+This is how the algorithm works approximately:
+
+```mermaid
+stateDiagram-v2
+    Check_Commit: Check Commit
+    [*] --> Check_Commit: Current commit
+
+    state Path_Ignored <<choice>>
+    Check_Commit --> Path_Ignored: Do all changed files match against "paths_ignore"?
+    Ignored_Yes: Yes
+    Ignored_No: No
+    Path_Ignored --> Ignored_Yes
+    Path_Ignored --> Ignored_No
+
+    state Path_Skipped <<choice>>
+    Ignored_No --> Path_Skipped: Do none of the changed files match against "paths"?
+    Skipped_Yes: Yes
+    Skipped_No: No
+    Path_Skipped --> Skipped_Yes: No matches
+    Path_Skipped --> Skipped_No: Some matches
+
+    Parent_Commit: Fetch Parent Commit
+    Ignored_Yes --> Parent_Commit
+    Skipped_Yes --> Parent_Commit
+
+    state Successful_Run <<choice>>
+    Parent_Commit --> Successful_Run: Is there a successful run for this commit?
+    Run_Yes: Yes
+    Run_No: No
+    Successful_Run --> Run_Yes
+    Successful_Run --> Run_No
+
+    Run_No --> Check_Commit: Parent commit
+
+    Skip: Skip!
+    Run_Yes --> Skip: (Because all changes since this run are in ignored or skipped paths)
+
+    Dont_Skip: Don't Skip!
+    Skipped_No --> Dont_Skip: (Because changed files needs to be "tested")
+```
+
 ## Maintainers
 
 - [@paescuj](https://github.com/paescuj)
