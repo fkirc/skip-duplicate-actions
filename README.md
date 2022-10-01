@@ -404,6 +404,33 @@ stateDiagram-v2
     Skipped_No --> Dont_Skip: (Because changed files needs to be "tested")
 ```
 
+## Frequently Asked Questions
+
+### Skip Check in Required Matrix Job
+
+Discussed in https://github.com/fkirc/skip-duplicate-actions/issues/44.
+
+If you have matrix jobs that are registered as required status checks and the matrix runs conditionally based on the skip check, you might run into the problem that the pull request remains in a unmergable state forever because the jobs are not executed at all and thus not reported as skipped (`Expected - Waiting for status to be reported`).
+
+There are several approaches to circumvent this problem:
+
+- Define the condition (`if`) in each step in the matrix job instead of a single condition on the job level: https://github.com/fkirc/skip-duplicate-actions/issues/44
+- If you want the check to be considered successful only if all jobs in the matrix were successful, you can add a subsequent job whose only task is to report the final status of the matrix. Then you can register this final job as a required status check:
+  ```yaml
+  result:
+    name: Result
+    if: needs.pre_job.outputs.should_skip != 'true' && always()
+    runs-on: ubuntu-latest
+    needs:
+      - pre_job
+      - example-matrix-job
+    steps:
+      - name: Mark result as failed
+        if: needs.example-matrix-job.result != 'success'
+        run: exit 1
+  ```
+- Define an opposite workflow, as offically suggested by GitHub: [Handling skipped but required checks](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks)
+
 ## Maintainers
 
 - [@paescuj](https://github.com/paescuj)
