@@ -406,7 +406,7 @@ stateDiagram-v2
 
 ## Frequently Asked Questions
 
-### Skip Check in Required Matrix Job
+### How to Use Skip Check With Required Matrix Jobs?
 
 Discussed in https://github.com/fkirc/skip-duplicate-actions/issues/44.
 
