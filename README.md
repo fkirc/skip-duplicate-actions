@@ -428,7 +428,7 @@ There are several approaches to circumvent this problem:
       - name: Mark result as failed
         if: needs.example-matrix-job.result != 'success'
         run: exit 1
-    ```
+  ```
 - Define an opposite workflow, as offically suggested by GitHub: [Handling skipped but required checks](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks)
 
 ## Maintainers
