@@ -20,6 +20,7 @@ inputs:
   paths_filter:
     description: 'A YAML-string with named paths_ignore/paths patterns'
     required: false
+    default: '{}'
   cancel_others:
     description: 'If true, then workflow runs from outdated commits will be cancelled'
     required: false

@@ -16,15 +16,21 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@actions/artifact": "^1.1.0",
     "@actions/core": "^1.9.1",
     "@actions/github": "^5.0.0",
+    "compress-json": "^2.1.2",
     "js-yaml": "^4.1.0",
-    "micromatch": "^4.0.4"
+    "jszip": "^3.10.1",
+    "micromatch": "^4.0.4",
+    "parse-json": "^6.0.2",
+    "zod": "^3.19.1"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.5",
     "@types/micromatch": "^4.0.2",
     "@types/node": "^16.11.56",
+    "@types/parse-json": "^4.0.0",
     "@typescript-eslint/eslint-plugin": "^5.36.1",
     "@typescript-eslint/parser": "^5.36.1",
     "@vercel/ncc": "^0.34.0",
