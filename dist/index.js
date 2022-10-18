@@ -90,8 +90,10 @@ const ArtifactResultType = zod_1.z.object({
 });
 const ArtifactRunType = zod_1.z.object({
     id: zod_1.z.number(),
-    treeHash: zod_1.z.string(),
-    commitHash: zod_1.z.string(),
+    hashes: zod_1.z.optional(zod_1.z.object({
+        tree: zod_1.z.string(),
+        commit: zod_1.z.string()
+    })),
     result: ArtifactResultType
 });
 const ArtifactDataType = zod_1.z
@@ -458,10 +460,14 @@ class SkipDuplicateActions {
             // Prepare artifact data.
             const artifactRun = {
                 id: this.context.currentRun.id,
-                treeHash: this.context.currentRun.treeHash,
-                commitHash: this.context.currentRun.commitHash,
                 result: artifactResult
             };
+            if (this.context.currentRun.event === 'pull_request') {
+                artifactRun.hashes = {
+                    tree: this.context.currentRun.treeHash,
+                    commit: this.context.currentRun.commitHash
+                };
+            }
             const artifactData = {
                 v: 1,
                 runs: [artifactRun, ...this.context.artifactRuns]
@@ -529,6 +535,7 @@ function main() {
         let currentCommit;
         let currentTreeHash = (_a = apiCurrentRun.head_commit) === null || _a === void 0 ? void 0 : _a.tree_id;
         let currentCommitHash = apiCurrentRun.head_sha;
+        // Get tree and commit hash of the merge commit on pull request events.
         if (apiCurrentRun.event === 'pull_request') {
             const { data: commit } = yield octokit.rest.repos.getCommit(Object.assign(Object.assign({}, repo), { ref: github.context.sha }));
             currentCommit = commit;
@@ -587,10 +594,13 @@ function main() {
             let treeHash = (_d = run.head_commit) === null || _d === void 0 ? void 0 : _d.tree_id;
             let commitHash = run.head_sha;
             const artifactRun = artifactRuns.find(item => item.id === run.id);
+            // Assign tree and commit hash from artifact data for pull request runs.
+            // Ignore the run if the hashes are not available.
+            // See https://github.com/fkirc/skip-duplicate-actions/issues/264.
             if (run.event === 'pull_request') {
-                if (artifactRun) {
-                    treeHash = artifactRun.treeHash;
-                    commitHash = artifactRun.commitHash;
+                if (artifactRun === null || artifactRun === void 0 ? void 0 : artifactRun.hashes) {
+                    treeHash = artifactRun.hashes.tree;
+                    commitHash = artifactRun.hashes.commit;
                 }
                 else {
                     continue;

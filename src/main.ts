@@ -62,8 +62,12 @@ type ArtifactResult = z.infer<typeof ArtifactResultType>
 
 const ArtifactRunType = z.object({
   id: z.number(),
-  treeHash: z.string(),
-  commitHash: z.string(),
+  hashes: z.optional(
+    z.object({
+      tree: z.string(),
+      commit: z.string()
+    })
+  ),
   result: ArtifactResultType
 })
 type ArtifactRun = z.infer<typeof ArtifactRunType>
@@ -621,9 +625,13 @@ class SkipDuplicateActions {
     // Prepare artifact data.
     const artifactRun: ArtifactRun = {
       id: this.context.currentRun.id,
-      treeHash: this.context.currentRun.treeHash,
-      commitHash: this.context.currentRun.commitHash,
       result: artifactResult
+    }
+    if (this.context.currentRun.event === 'pull_request') {
+      artifactRun.hashes = {
+        tree: this.context.currentRun.treeHash,
+        commit: this.context.currentRun.commitHash
+      }
     }
     const artifactData: ArtifactData = {
       v: 1,
@@ -713,6 +721,7 @@ async function main(): Promise<void> {
   let currentCommit: ApiCommit | undefined
   let currentTreeHash = apiCurrentRun.head_commit?.tree_id
   let currentCommitHash = apiCurrentRun.head_sha
+  // Get tree and commit hash of the merge commit on pull request events.
   if (apiCurrentRun.event === 'pull_request') {
     const {data: commit} = await octokit.rest.repos.getCommit({
       ...repo,
@@ -810,10 +819,13 @@ async function main(): Promise<void> {
     let commitHash = run.head_sha
 
     const artifactRun = artifactRuns.find(item => item.id === run.id)
+    // Assign tree and commit hash from artifact data for pull request runs.
+    // Ignore the run if the hashes are not available.
+    // See https://github.com/fkirc/skip-duplicate-actions/issues/264.
     if (run.event === 'pull_request') {
-      if (artifactRun) {
-        treeHash = artifactRun.treeHash
-        commitHash = artifactRun.commitHash
+      if (artifactRun?.hashes) {
+        treeHash = artifactRun.hashes.tree
+        commitHash = artifactRun.hashes.commit
       } else {
         continue
       }
