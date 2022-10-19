@@ -498,6 +498,7 @@ class SkipDuplicateActions {
             core.setOutput('skipped_by', outputResult.skipped_by || {});
             core.setOutput('paths_result', outputResult.paths_result || {});
             core.setOutput('changed_files', outputResult.changed_files || []);
+            // Wait for all tasks to be finished (ignore errors).
             yield Promise.allSettled(tasks);
             process.exit(0);
         });
@@ -538,6 +539,7 @@ function main() {
         // Get tree and commit hash of the merge commit on pull request events.
         if (apiCurrentRun.event === 'pull_request') {
             const { data: commit } = yield octokit.rest.repos.getCommit(Object.assign(Object.assign({}, repo), { ref: github.context.sha }));
+            core.info(JSON.stringify(commit, null, 2));
             currentCommit = commit;
             currentTreeHash = commit.commit.tree.sha;
             currentCommitHash = commit.sha;

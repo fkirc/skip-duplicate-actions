@@ -678,6 +678,7 @@ class SkipDuplicateActions {
     core.setOutput('paths_result', outputResult.paths_result || {})
     core.setOutput('changed_files', outputResult.changed_files || [])
 
+    // Wait for all tasks to be finished (ignore errors).
     await Promise.allSettled(tasks)
     process.exit(0)
   }
@@ -727,6 +728,7 @@ async function main(): Promise<void> {
       ...repo,
       ref: github.context.sha
     })
+    core.info(JSON.stringify(commit, null, 2))
     currentCommit = commit
     currentTreeHash = commit.commit.tree.sha
     currentCommitHash = commit.sha
