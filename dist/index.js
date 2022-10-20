@@ -315,8 +315,8 @@ class SkipDuplicateActions {
     }
     backtracePathSkipping() {
         return __awaiter(this, void 0, void 0, function* () {
-            let commit = this.context.currentCommit;
-            let iterSha = this.context.currentRun.commitHash;
+            let commit;
+            let iterSha = this.context.initialIterSha;
             let distanceToHEAD = 0;
             const allChangedFiles = [];
             // The global paths settings are added under a "global" filter.
@@ -331,9 +331,7 @@ class SkipDuplicateActions {
                 pathsResult.addFilter(name);
             }
             do {
-                if (distanceToHEAD > 0 || !commit) {
-                    commit = yield this.fetchCommitDetails(iterSha);
-                }
+                commit = yield this.fetchCommitDetails(iterSha);
                 if (!commit) {
                     break;
                 }
@@ -533,14 +531,13 @@ function main() {
         const octokit = github.getOctokit(token);
         // Get and parse the current workflow run.
         const { data: apiCurrentRun } = yield octokit.rest.actions.getWorkflowRun(Object.assign(Object.assign({}, repo), { run_id: github.context.runId }));
-        let currentCommit;
+        const initialIterSha = apiCurrentRun.head_sha;
         let currentTreeHash = (_a = apiCurrentRun.head_commit) === null || _a === void 0 ? void 0 : _a.tree_id;
         let currentCommitHash = apiCurrentRun.head_sha;
         // Get tree and commit hash of the merge commit on pull request events.
         if (apiCurrentRun.event === 'pull_request') {
             const { data: commit } = yield octokit.rest.repos.getCommit(Object.assign(Object.assign({}, repo), { ref: github.context.sha }));
             core.info(JSON.stringify(commit, null, 2));
-            currentCommit = commit;
             currentTreeHash = commit.commit.tree.sha;
             currentCommitHash = commit.sha;
         }
@@ -629,7 +626,7 @@ function main() {
             olderRuns,
             artifactIds,
             artifactRuns,
-            currentCommit
+            initialIterSha
         });
         yield skipDuplicateActions.run();
     });

@@ -210,7 +210,7 @@ type Context = {
   olderRuns: WorkflowRun[]
   artifactIds: number[]
   artifactRuns: ArtifactRun[]
-  currentCommit?: ApiCommit
+  initialIterSha: string
 }
 
 const ARTIFACT_FILE_NAME = 'data.json'
@@ -408,8 +408,8 @@ class SkipDuplicateActions {
     pathsResult: PathsResult
     changedFiles: ChangedFiles
   }> {
-    let commit: ApiCommit | undefined = this.context.currentCommit
-    let iterSha: string | undefined = this.context.currentRun.commitHash
+    let commit: ApiCommit | undefined
+    let iterSha: string | undefined = this.context.initialIterSha
     let distanceToHEAD = 0
     const allChangedFiles: ChangedFiles = []
 
@@ -430,9 +430,7 @@ class SkipDuplicateActions {
     }
 
     do {
-      if (distanceToHEAD > 0 || !commit) {
-        commit = await this.fetchCommitDetails(iterSha)
-      }
+      commit = await this.fetchCommitDetails(iterSha)
       if (!commit) {
         break
       }
@@ -719,7 +717,7 @@ async function main(): Promise<void> {
     ...repo,
     run_id: github.context.runId
   })
-  let currentCommit: ApiCommit | undefined
+  const initialIterSha = apiCurrentRun.head_sha
   let currentTreeHash = apiCurrentRun.head_commit?.tree_id
   let currentCommitHash = apiCurrentRun.head_sha
   // Get tree and commit hash of the merge commit on pull request events.
@@ -729,7 +727,6 @@ async function main(): Promise<void> {
       ref: github.context.sha
     })
     core.info(JSON.stringify(commit, null, 2))
-    currentCommit = commit
     currentTreeHash = commit.commit.tree.sha
     currentCommitHash = commit.sha
   }
@@ -862,7 +859,7 @@ async function main(): Promise<void> {
     olderRuns,
     artifactIds,
     artifactRuns,
-    currentCommit
+    initialIterSha
   })
   await skipDuplicateActions.run()
 }
