@@ -88,20 +88,20 @@ const ArtifactResultType = zod_1.z.object({
     paths_result: zod_1.z.optional(zod_1.z.record(zod_1.z.string(), ArtifactPathsResultType)),
     changed_files: zod_1.z.optional(ChangedFilesType)
 });
-const ArtifactRunType = zod_1.z.object({
-    id: zod_1.z.number(),
-    hashes: zod_1.z.optional(zod_1.z.object({
-        tree: zod_1.z.string(),
-        commit: zod_1.z.string()
-    })),
-    result: ArtifactResultType
-});
+const ArtifactRunsType = zod_1.z.record(
+/** Run ID */
+zod_1.z.number(), zod_1.z.object({
+    /** Tree Hash */
+    t: zod_1.z.optional(zod_1.z.string()),
+    /** Result */
+    r: ArtifactResultType
+}));
 const ArtifactDataType = zod_1.z
     .object({
     /* Version */
     v: zod_1.z.literal(1),
     /* Workflow Runs */
-    runs: zod_1.z.array(ArtifactRunType)
+    r: ArtifactRunsType
 })
     .strict();
 const PathsFilterType = zod_1.z.record(zod_1.z.string(), zod_1.z.object({
@@ -186,6 +186,7 @@ class SkipDuplicateActions {
         };
     }
     run() {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             // Cancel outdated runs.
             if (this.inputs.cancel_others) {
@@ -201,7 +202,9 @@ class SkipDuplicateActions {
             }
             // Skip on successful duplicate run.
             if (this.inputs.skip_after_successful_duplicates) {
-                const successfulDuplicateRun = this.findSuccessfulDuplicateRun(this.context.currentRun.treeHash);
+                const successfulDuplicateRun = this.findSuccessfulDuplicateRun(this.context.currentRun.event === 'pull_request'
+                    ? (_a = this.context.artifactRuns.get(this.context.currentRun)) === null || _a === void 0 ? void 0 : _a.t
+                    : this.context.currentRun.treeHash);
                 if (successfulDuplicateRun) {
                     core.info(`Skip execution because the exact same files have been successfully checked in run ${successfulDuplicateRun.htmlUrl}`);
                     yield this.exitSuccess({
@@ -274,9 +277,18 @@ class SkipDuplicateActions {
         });
     }
     findSuccessfulDuplicateRun(treeHash) {
-        return this.context.olderRuns.find(run => run.treeHash === treeHash &&
-            run.status === 'completed' &&
-            run.conclusion === 'success');
+        if (!treeHash) {
+            return;
+        }
+        return this.context.olderRuns.find(run => {
+            var _a;
+            const runTreeHash = run.event === 'pull_request'
+                ? (_a = this.context.artifactRuns.get(run)) === null || _a === void 0 ? void 0 : _a.t
+                : run.treeHash;
+            return (runTreeHash === treeHash &&
+                run.status === 'completed' &&
+                run.conclusion === 'success');
+        });
     }
     detectConcurrentRuns() {
         const concurrentRuns = this.context.allRuns.filter(run => run.status !== 'completed');
@@ -316,7 +328,7 @@ class SkipDuplicateActions {
     backtracePathSkipping() {
         return __awaiter(this, void 0, void 0, function* () {
             let commit;
-            let iterSha = this.context.initialIterSha;
+            let iterSha = this.context.currentRun.commitHash;
             let distanceToHEAD = 0;
             const allChangedFiles = [];
             // The global paths settings are added under a "global" filter.
@@ -456,22 +468,15 @@ class SkipDuplicateActions {
             }
             tasks.push(core.summary.addRaw(summary.join('')).write());
             // Prepare artifact data.
-            const artifactRun = {
-                id: this.context.currentRun.id,
-                result: artifactResult
-            };
-            if (this.context.currentRun.event === 'pull_request') {
-                artifactRun.hashes = {
-                    tree: this.context.currentRun.treeHash,
-                    commit: this.context.currentRun.commitHash
-                };
+            const artifactRuns = {};
+            this.context.artifactRuns.set(this.context.currentRun, Object.assign(Object.assign({}, this.context.artifactRuns.get(this.context.currentRun)), { r: artifactResult }));
+            for (const [key, value] of this.context.artifactRuns) {
+                artifactRuns[key.id] = value;
             }
             const artifactData = {
                 v: 1,
-                runs: [artifactRun, ...this.context.artifactRuns]
+                r: artifactRuns
             };
-            // Limit to last 100 runs.
-            artifactData.runs.length = Math.min(artifactData.runs.length, 100);
             try {
                 // Upload artifact.
                 yield fs.writeFile(ARTIFACT_FILE_NAME, JSON.stringify((0, compress_json_1.compress)(artifactData)));
@@ -531,16 +536,7 @@ function main() {
         const octokit = github.getOctokit(token);
         // Get and parse the current workflow run.
         const { data: apiCurrentRun } = yield octokit.rest.actions.getWorkflowRun(Object.assign(Object.assign({}, repo), { run_id: github.context.runId }));
-        const initialIterSha = apiCurrentRun.head_sha;
-        let currentTreeHash = (_a = apiCurrentRun.head_commit) === null || _a === void 0 ? void 0 : _a.tree_id;
-        let currentCommitHash = apiCurrentRun.head_sha;
-        // Get tree and commit hash of the merge commit on pull request events.
-        if (apiCurrentRun.event === 'pull_request') {
-            const { data: commit } = yield octokit.rest.repos.getCommit(Object.assign(Object.assign({}, repo), { ref: github.context.sha }));
-            core.info(JSON.stringify(commit, null, 2));
-            currentTreeHash = commit.commit.tree.sha;
-            currentCommitHash = commit.sha;
-        }
+        const currentTreeHash = (_a = apiCurrentRun.head_commit) === null || _a === void 0 ? void 0 : _a.tree_id;
         if (!currentTreeHash) {
             exitFail(`
         Could not find the tree hash of run ${apiCurrentRun.id} (Workflow ID: ${apiCurrentRun.workflow_id},
@@ -548,12 +544,22 @@ function main() {
         This might be a run associated with a headless or removed commit.
       `);
         }
-        const currentRun = mapWorkflowRun(apiCurrentRun, currentTreeHash, currentCommitHash);
+        const currentRun = mapWorkflowRun(apiCurrentRun, currentTreeHash);
+        // TODO
+        const artifactRuns = new Map();
+        // Add current run to artifact runs.
+        const currentArtifactRun = {};
+        // Get tree hash of the merge commit on pull request events.
+        if (apiCurrentRun.event === 'pull_request') {
+            const { data: commit } = yield octokit.rest.repos.getCommit(Object.assign(Object.assign({}, repo), { ref: github.context.sha }));
+            currentArtifactRun.t = commit.commit.tree.sha;
+        }
+        artifactRuns.set(currentRun, currentArtifactRun);
         // Fetch list of runs for current workflow.
         const { data: { workflow_runs: apiAllRuns } } = yield octokit.rest.actions.listWorkflowRuns(Object.assign(Object.assign({}, repo), { workflow_id: currentRun.workflowId, per_page: 100 }));
         // Get and parse artifact data.
         let artifactIds = [];
-        let artifactRuns = [];
+        let artifactData = {};
         try {
             const { data: { artifacts: apiAllArtifacts } } = yield octokit.rest.actions.listArtifactsForRepo(Object.assign(Object.assign({}, repo), { per_page: 100 }));
             const artifactName = getArtifactName(currentRun.workflowId);
@@ -570,7 +576,7 @@ function main() {
                 });
                 const file = yield ((_c = zip.file(ARTIFACT_FILE_NAME)) === null || _c === void 0 ? void 0 : _c.async('string'));
                 if (file) {
-                    artifactRuns = ArtifactDataType.parse((0, compress_json_1.decompress)((0, parse_json_1.default)(file))).runs;
+                    artifactData = ArtifactDataType.parse((0, compress_json_1.decompress)((0, parse_json_1.default)(file))).r;
                 }
             }
         }
@@ -590,25 +596,11 @@ function main() {
             if (run.id === currentRun.id) {
                 continue;
             }
-            let treeHash = (_d = run.head_commit) === null || _d === void 0 ? void 0 : _d.tree_id;
-            let commitHash = run.head_sha;
-            const artifactRun = artifactRuns.find(item => item.id === run.id);
-            // Assign tree and commit hash from artifact data for pull request runs.
-            // Ignore the run if the hashes are not available.
-            // See https://github.com/fkirc/skip-duplicate-actions/issues/264.
-            if (run.event === 'pull_request') {
-                if (artifactRun === null || artifactRun === void 0 ? void 0 : artifactRun.hashes) {
-                    treeHash = artifactRun.hashes.tree;
-                    commitHash = artifactRun.hashes.commit;
-                }
-                else {
-                    continue;
-                }
-            }
             // Filter out runs that lack 'head_commit' (most likely runs associated with a headless or removed commit).
             // See https://github.com/fkirc/skip-duplicate-actions/pull/178.
+            const treeHash = (_d = run.head_commit) === null || _d === void 0 ? void 0 : _d.tree_id;
             if (treeHash) {
-                const mappedRun = mapWorkflowRun(run, treeHash, commitHash, artifactRun === null || artifactRun === void 0 ? void 0 : artifactRun.result);
+                const mappedRun = mapWorkflowRun(run, treeHash);
                 // Add to list of all runs.
                 allRuns.push(mappedRun);
                 // Check if run can be added to list of older runs.
@@ -616,6 +608,21 @@ function main() {
                     new Date(currentRun.createdAt).getTime()) {
                     olderRuns.push(mappedRun);
                 }
+                if (run.id in artifactData) {
+                    artifactRuns.set(mappedRun, artifactData[run.id]);
+                }
+                // TODO
+                // // Assign tree and commit hash from artifact data for pull request runs.
+                // // Ignore the run if the hashes are not available.
+                // // See https://github.com/fkirc/skip-duplicate-actions/issues/264.
+                // if (run.event === 'pull_request') {
+                //   if (artifactRun?.hashes) {
+                //     treeHash = artifactRun.hashes.tree
+                //     commitHash = artifactRun.hashes.commit
+                //   } else {
+                //     continue
+                //   }
+                // }
             }
         }
         const skipDuplicateActions = new SkipDuplicateActions(inputs, {
@@ -624,9 +631,8 @@ function main() {
             currentRun,
             allRuns,
             olderRuns,
-            artifactIds,
             artifactRuns,
-            initialIterSha
+            artifactIds
         });
         yield skipDuplicateActions.run();
     });
@@ -644,14 +650,14 @@ function getYamlInput(name) {
     return js_yaml_1.default.load(core.getInput(name), { filename: name });
 }
 /* Pick selected data from workflow run. */
-function mapWorkflowRun(run, treeHash, commitHash, result) {
+function mapWorkflowRun(run, treeHash) {
     var _a, _b;
     return {
         id: run.id,
         runNumber: run.run_number,
         event: run.event,
         treeHash,
-        commitHash,
+        commitHash: run.head_sha,
         status: run.status,
         conclusion: run.conclusion,
         htmlUrl: run.html_url,
@@ -660,8 +666,7 @@ function mapWorkflowRun(run, treeHash, commitHash, result) {
         // (see https://github.com/github/rest-api-description/issues/1586)
         repo: (_b = (_a = run.head_repository) === null || _a === void 0 ? void 0 : _a.full_name) !== null && _b !== void 0 ? _b : null,
         workflowId: run.workflow_id,
-        createdAt: run.created_at,
-        result: result !== null && result !== void 0 ? result : null
+        createdAt: run.created_at
     };
 }
 /** Compose Zod errors. */

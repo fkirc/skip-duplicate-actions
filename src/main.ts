@@ -60,24 +60,25 @@ const ArtifactResultType = z.object({
 })
 type ArtifactResult = z.infer<typeof ArtifactResultType>
 
-const ArtifactRunType = z.object({
-  id: z.number(),
-  hashes: z.optional(
-    z.object({
-      tree: z.string(),
-      commit: z.string()
-    })
-  ),
-  result: ArtifactResultType
-})
-type ArtifactRun = z.infer<typeof ArtifactRunType>
+const ArtifactRunsType = z.record(
+  /** Run ID */
+  z.number(),
+  z.object({
+    /** Tree Hash */
+    t: z.optional(z.string()),
+    /** Result */
+    r: ArtifactResultType
+  })
+)
+type ArtifactRuns = z.infer<typeof ArtifactRunsType>
+type ArtifactRun = ArtifactRuns[number]
 
 const ArtifactDataType = z
   .object({
     /* Version */
     v: z.literal(1),
     /* Workflow Runs */
-    runs: z.array(ArtifactRunType)
+    r: ArtifactRunsType
   })
   .strict()
 type ArtifactData = z.infer<typeof ArtifactDataType>
@@ -95,7 +96,6 @@ interface WorkflowRun {
   repo: string
   workflowId: number
   createdAt: string
-  result: ArtifactResult | null
 }
 
 const PathsFilterType = z.record(
@@ -208,9 +208,8 @@ type Context = {
   currentRun: WorkflowRun
   allRuns: WorkflowRun[]
   olderRuns: WorkflowRun[]
+  artifactRuns: Map<WorkflowRun, ArtifactRun>
   artifactIds: number[]
-  artifactRuns: ArtifactRun[]
-  initialIterSha: string
 }
 
 const ARTIFACT_FILE_NAME = 'data.json'
@@ -247,7 +246,9 @@ class SkipDuplicateActions {
     // Skip on successful duplicate run.
     if (this.inputs.skip_after_successful_duplicates) {
       const successfulDuplicateRun = this.findSuccessfulDuplicateRun(
-        this.context.currentRun.treeHash
+        this.context.currentRun.event === 'pull_request'
+          ? this.context.artifactRuns.get(this.context.currentRun)?.t
+          : this.context.currentRun.treeHash
       )
       if (successfulDuplicateRun) {
         core.info(
@@ -343,13 +344,23 @@ class SkipDuplicateActions {
     }
   }
 
-  findSuccessfulDuplicateRun(treeHash: string): WorkflowRun | undefined {
-    return this.context.olderRuns.find(
-      run =>
-        run.treeHash === treeHash &&
+  findSuccessfulDuplicateRun(
+    treeHash: string | undefined
+  ): WorkflowRun | undefined {
+    if (!treeHash) {
+      return
+    }
+    return this.context.olderRuns.find(run => {
+      const runTreeHash =
+        run.event === 'pull_request'
+          ? this.context.artifactRuns.get(run)?.t
+          : run.treeHash
+      return (
+        runTreeHash === treeHash &&
         run.status === 'completed' &&
         run.conclusion === 'success'
-    )
+      )
+    })
   }
 
   detectConcurrentRuns(): WorkflowRun | undefined {
@@ -409,7 +420,7 @@ class SkipDuplicateActions {
     changedFiles: ChangedFiles
   }> {
     let commit: ApiCommit | undefined
-    let iterSha: string | undefined = this.context.initialIterSha
+    let iterSha: string | undefined = this.context.currentRun.commitHash
     let distanceToHEAD = 0
     const allChangedFiles: ChangedFiles = []
 
@@ -621,22 +632,18 @@ class SkipDuplicateActions {
     tasks.push(core.summary.addRaw(summary.join('')).write())
 
     // Prepare artifact data.
-    const artifactRun: ArtifactRun = {
-      id: this.context.currentRun.id,
-      result: artifactResult
-    }
-    if (this.context.currentRun.event === 'pull_request') {
-      artifactRun.hashes = {
-        tree: this.context.currentRun.treeHash,
-        commit: this.context.currentRun.commitHash
-      }
+    const artifactRuns: ArtifactRuns = {}
+    this.context.artifactRuns.set(this.context.currentRun, {
+      ...this.context.artifactRuns.get(this.context.currentRun),
+      r: artifactResult
+    })
+    for (const [key, value] of this.context.artifactRuns) {
+      artifactRuns[key.id] = value
     }
     const artifactData: ArtifactData = {
       v: 1,
-      runs: [artifactRun, ...this.context.artifactRuns]
+      r: artifactRuns
     }
-    // Limit to last 100 runs.
-    artifactData.runs.length = Math.min(artifactData.runs.length, 100)
     try {
       // Upload artifact.
       await fs.writeFile(
@@ -717,19 +724,7 @@ async function main(): Promise<void> {
     ...repo,
     run_id: github.context.runId
   })
-  const initialIterSha = apiCurrentRun.head_sha
-  let currentTreeHash = apiCurrentRun.head_commit?.tree_id
-  let currentCommitHash = apiCurrentRun.head_sha
-  // Get tree and commit hash of the merge commit on pull request events.
-  if (apiCurrentRun.event === 'pull_request') {
-    const {data: commit} = await octokit.rest.repos.getCommit({
-      ...repo,
-      ref: github.context.sha
-    })
-    core.info(JSON.stringify(commit, null, 2))
-    currentTreeHash = commit.commit.tree.sha
-    currentCommitHash = commit.sha
-  }
+  const currentTreeHash = apiCurrentRun.head_commit?.tree_id
   if (!currentTreeHash) {
     exitFail(`
         Could not find the tree hash of run ${apiCurrentRun.id} (Workflow ID: ${apiCurrentRun.workflow_id},
@@ -737,11 +732,22 @@ async function main(): Promise<void> {
         This might be a run associated with a headless or removed commit.
       `)
   }
-  const currentRun = mapWorkflowRun(
-    apiCurrentRun,
-    currentTreeHash,
-    currentCommitHash
-  )
+  const currentRun = mapWorkflowRun(apiCurrentRun, currentTreeHash)
+
+  // TODO
+  const artifactRuns = new Map<WorkflowRun, ArtifactRun>()
+
+  // Add current run to artifact runs.
+  const currentArtifactRun = {} as ArtifactRun
+  // Get tree hash of the merge commit on pull request events.
+  if (apiCurrentRun.event === 'pull_request') {
+    const {data: commit} = await octokit.rest.repos.getCommit({
+      ...repo,
+      ref: github.context.sha
+    })
+    currentArtifactRun.t = commit.commit.tree.sha
+  }
+  artifactRuns.set(currentRun, currentArtifactRun)
 
   // Fetch list of runs for current workflow.
   const {
@@ -754,7 +760,7 @@ async function main(): Promise<void> {
 
   // Get and parse artifact data.
   let artifactIds: number[] = []
-  let artifactRuns: ArtifactRun[] = []
+  let artifactData: ArtifactRuns = {}
   try {
     const {
       data: {artifacts: apiAllArtifacts}
@@ -790,7 +796,7 @@ async function main(): Promise<void> {
       )
       const file = await zip.file(ARTIFACT_FILE_NAME)?.async('string')
       if (file) {
-        artifactRuns = ArtifactDataType.parse(decompress(parseJson(file))).runs
+        artifactData = ArtifactDataType.parse(decompress(parseJson(file))).r
       }
     }
   } catch (error) {
@@ -814,33 +820,14 @@ async function main(): Promise<void> {
       continue
     }
 
-    let treeHash = run.head_commit?.tree_id
-    let commitHash = run.head_sha
-
-    const artifactRun = artifactRuns.find(item => item.id === run.id)
-    // Assign tree and commit hash from artifact data for pull request runs.
-    // Ignore the run if the hashes are not available.
-    // See https://github.com/fkirc/skip-duplicate-actions/issues/264.
-    if (run.event === 'pull_request') {
-      if (artifactRun?.hashes) {
-        treeHash = artifactRun.hashes.tree
-        commitHash = artifactRun.hashes.commit
-      } else {
-        continue
-      }
-    }
-
     // Filter out runs that lack 'head_commit' (most likely runs associated with a headless or removed commit).
     // See https://github.com/fkirc/skip-duplicate-actions/pull/178.
+    const treeHash = run.head_commit?.tree_id
     if (treeHash) {
-      const mappedRun = mapWorkflowRun(
-        run,
-        treeHash,
-        commitHash,
-        artifactRun?.result
-      )
+      const mappedRun = mapWorkflowRun(run, treeHash)
       // Add to list of all runs.
       allRuns.push(mappedRun)
+
       // Check if run can be added to list of older runs.
       if (
         new Date(mappedRun.createdAt).getTime() <
@@ -848,6 +835,23 @@ async function main(): Promise<void> {
       ) {
         olderRuns.push(mappedRun)
       }
+
+      if (run.id in artifactData) {
+        artifactRuns.set(mappedRun, artifactData[run.id])
+      }
+
+      // TODO
+      // // Assign tree and commit hash from artifact data for pull request runs.
+      // // Ignore the run if the hashes are not available.
+      // // See https://github.com/fkirc/skip-duplicate-actions/issues/264.
+      // if (run.event === 'pull_request') {
+      //   if (artifactRun?.hashes) {
+      //     treeHash = artifactRun.hashes.tree
+      //     commitHash = artifactRun.hashes.commit
+      //   } else {
+      //     continue
+      //   }
+      // }
     }
   }
 
@@ -857,9 +861,8 @@ async function main(): Promise<void> {
     currentRun,
     allRuns,
     olderRuns,
-    artifactIds,
     artifactRuns,
-    initialIterSha
+    artifactIds
   })
   await skipDuplicateActions.run()
 }
@@ -881,16 +884,14 @@ function getYamlInput(name: string): unknown {
 /* Pick selected data from workflow run. */
 function mapWorkflowRun(
   run: ApiWorkflowRun | ApiWorkflowRuns,
-  treeHash: string,
-  commitHash: string,
-  result?: ArtifactResult
+  treeHash: string
 ): WorkflowRun {
   return {
     id: run.id,
     runNumber: run.run_number,
     event: run.event as WorkflowRunTrigger,
     treeHash,
-    commitHash,
+    commitHash: run.head_sha,
     status: run.status as WorkflowRunStatus,
     conclusion: run.conclusion as WorkflowRunConclusion,
     htmlUrl: run.html_url,
@@ -899,8 +900,7 @@ function mapWorkflowRun(
     // (see https://github.com/github/rest-api-description/issues/1586)
     repo: run.head_repository?.full_name ?? null,
     workflowId: run.workflow_id,
-    createdAt: run.created_at,
-    result: result ?? null
+    createdAt: run.created_at
   }
 }
 
