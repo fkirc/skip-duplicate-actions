@@ -801,11 +801,6 @@ async function main(): Promise<void> {
       }
     }
   } catch (error) {
-    core.info(typeof error)
-    if (error) {
-      core.info(JSON.stringify(Object.getPrototypeOf(error)))
-      core.info(JSON.stringify(error.constructor))
-    }
     core.warning(
       composeErrorMessage({
         title: 'Failed to get artifact data',
@@ -912,7 +907,7 @@ function composeZodError(error: z.ZodError, limit?: number): string {
           break
       }
     }
-    errors.push(`${keyPath ? `${keyPath}: ` : ''}${error.message}`)
+    errors.push(`${keyPath ? `${keyPath}: ` : ''}${issue.message}`)
   }
   return `${errors.join('\n').replace(/^/gm, errors.length > 1 ? '- ' : '')}`
 }
