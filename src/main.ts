@@ -350,6 +350,7 @@ class SkipDuplicateActions {
     if (!treeHash) {
       return
     }
+    // TODO Assign tree hash from artifact data for pull request runs. Ignore the run if the hash is not available.
     return this.context.olderRuns.find(run => {
       const runTreeHash =
         run.event === 'pull_request'
@@ -800,6 +801,11 @@ async function main(): Promise<void> {
       }
     }
   } catch (error) {
+    core.info(typeof error)
+    if (error) {
+      core.info(JSON.stringify(Object.getPrototypeOf(error)))
+      core.info(JSON.stringify(error.constructor))
+    }
     core.warning(
       composeErrorMessage({
         title: 'Failed to get artifact data',
@@ -839,19 +845,6 @@ async function main(): Promise<void> {
       if (run.id in artifactData) {
         artifactRuns.set(mappedRun, artifactData[run.id])
       }
-
-      // TODO
-      // // Assign tree and commit hash from artifact data for pull request runs.
-      // // Ignore the run if the hashes are not available.
-      // // See https://github.com/fkirc/skip-duplicate-actions/issues/264.
-      // if (run.event === 'pull_request') {
-      //   if (artifactRun?.hashes) {
-      //     treeHash = artifactRun.hashes.tree
-      //     commitHash = artifactRun.hashes.commit
-      //   } else {
-      //     continue
-      //   }
-      // }
     }
   }
 
