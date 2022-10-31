@@ -1,9 +1,13 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
+import {getOctokitOptions, GitHub} from '@actions/github/lib/utils'
+import {retry} from '@octokit/plugin-retry'
 import type {Endpoints} from '@octokit/types'
-import {GitHub} from '@actions/github/lib/utils'
 import micromatch from 'micromatch'
 import yaml from 'js-yaml'
+
+// Register 'retry' plugin with default values
+const Octokit = GitHub.plugin(retry)
 
 type ApiWorkflowRun =
   Endpoints['GET /repos/{owner}/{repo}/actions/runs/{run_id}']['response']['data']
@@ -88,7 +92,7 @@ type Inputs = {
 
 type Context = {
   repo: {owner: string; repo: string}
-  octokit: InstanceType<typeof GitHub>
+  octokit: InstanceType<typeof Octokit>
   currentRun: WorkflowRun
   allRuns: WorkflowRun[]
   olderRuns: WorkflowRun[]
@@ -458,7 +462,7 @@ async function main(): Promise<void> {
   }
 
   const repo = github.context.repo
-  const octokit = github.getOctokit(token)
+  const octokit = new Octokit(getOctokitOptions(token))
 
   // Get and parse the current workflow run.
   const {data: apiCurrentRun} = await octokit.rest.actions.getWorkflowRun({
