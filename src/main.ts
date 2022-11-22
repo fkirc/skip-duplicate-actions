@@ -88,6 +88,7 @@ type Inputs = {
   concurrentSkipping: ConcurrentSkipping
   cancelOthers: boolean
   skipAfterSuccessfulDuplicates: boolean
+  ref: string
 }
 
 type Context = {
@@ -162,7 +163,7 @@ class SkipDuplicateActions {
       this.inputs.pathsIgnore.length >= 1 ||
       Object.keys(this.inputs.pathsFilter).length >= 1
     ) {
-      const {changedFiles, pathsResult} = await this.backtracePathSkipping()
+      const {changedFiles, pathsResult} = await this.backtracePathSkipping(this.inputs.ref)
       await exitSuccess({
         shouldSkip:
           pathsResult.global.should_skip === 'unknown'
@@ -282,12 +283,12 @@ class SkipDuplicateActions {
     core.info(`Did not find any concurrent workflow runs that justify skipping`)
   }
 
-  async backtracePathSkipping(): Promise<{
+  async backtracePathSkipping(ref: string): Promise<{
     pathsResult: PathsResult
     changedFiles: ChangedFiles
   }> {
     let commit: ApiCommit | null
-    let iterSha: string | null = this.context.currentRun.commitHash
+    let iterSha: string | null = (ref ==='' ? this.context.currentRun.commitHash : ref)
     let distanceToHEAD = 0
     const allChangedFiles: ChangedFiles = []
 
@@ -458,7 +459,8 @@ async function main(): Promise<void> {
     cancelOthers: core.getBooleanInput('cancel_others'),
     skipAfterSuccessfulDuplicates: core.getBooleanInput(
       'skip_after_successful_duplicate'
-    )
+    ),
+    ref: core.getInput('ref')
   }
 
   const repo = github.context.repo

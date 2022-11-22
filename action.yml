@@ -36,6 +36,13 @@ inputs:
     description: 'One of never, same_content, same_content_newer, outdated_runs, always'
     required: true
     default: 'never'
+  ref:
+    description: |
+      The branch, tag or SHA to checkout. When checking the repository that
+      triggered a workflow, this defaults to the reference or SHA for that event.
+      Otherwise, uses the default branch.
+    required: false
+    default: ''
 outputs:
   should_skip:
     description: 'Returns true if the current run should be skipped according to your configured rules'
