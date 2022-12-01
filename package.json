@@ -22,7 +22,7 @@
     "@octokit/types": "^6.41.0",
     "@types/js-yaml": "^4.0.5",
     "@types/micromatch": "^4.0.2",
-    "@types/node": "^16.11.56",
+    "@types/node": "^16.18.4",
     "@typescript-eslint/eslint-plugin": "^5.45.0",
     "@typescript-eslint/parser": "^5.45.0",
     "@vercel/ncc": "^0.34.0",
