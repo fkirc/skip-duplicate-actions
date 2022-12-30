@@ -465,13 +465,15 @@ async function main(): Promise<void> {
   const octokit = new Octokit(getOctokitOptions(token))
 
   // Get and parse the current workflow run.
+  let apiCurrentRun: ApiWorkflowRun = null as unknown as ApiWorkflowRun
   try {
-    const {data: apiCurrentRun} = await octokit.rest.actions.getWorkflowRun({
+    const res = await octokit.rest.actions.getWorkflowRun({
       ...repo,
       run_id: github.context.runId
     })
+    apiCurrentRun = res.data
   } catch (error) {
-    core.warning(error)
+    core.warning(error as string | Error)
     await exitSuccess({
       shouldSkip: false,
       reason: 'no_transferable_run'

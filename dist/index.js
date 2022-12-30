@@ -334,8 +334,10 @@ function main() {
         const repo = github.context.repo;
         const octokit = new Octokit((0, utils_1.getOctokitOptions)(token));
         // Get and parse the current workflow run.
+        let apiCurrentRun = null;
         try {
-            const { data: apiCurrentRun } = yield octokit.rest.actions.getWorkflowRun(Object.assign(Object.assign({}, repo), { run_id: github.context.runId }));
+            const res = yield octokit.rest.actions.getWorkflowRun(Object.assign(Object.assign({}, repo), { run_id: github.context.runId }));
+            apiCurrentRun = res.data;
         }
         catch (error) {
             core.warning(error);
