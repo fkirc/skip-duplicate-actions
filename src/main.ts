@@ -466,16 +466,16 @@ async function main(): Promise<void> {
 
   // Get and parse the current workflow run.
   try {
-  const {data: apiCurrentRun} = await octokit.rest.actions.getWorkflowRun({
-    ...repo,
-    run_id: github.context.runId
-  })
+    const {data: apiCurrentRun} = await octokit.rest.actions.getWorkflowRun({
+      ...repo,
+      run_id: github.context.runId
+    })
   } catch (error) {
     core.warning(error)
     await exitSuccess({
-        shouldSkip: false,
-        reason: 'no_transferable_run'
-      })
+      shouldSkip: false,
+      reason: 'no_transferable_run'
+    })
   }
   const currentTreeHash = apiCurrentRun.head_commit?.tree_id
   if (!currentTreeHash) {
