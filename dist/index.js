@@ -334,7 +334,18 @@ function main() {
         const repo = github.context.repo;
         const octokit = new Octokit((0, utils_1.getOctokitOptions)(token));
         // Get and parse the current workflow run.
-        const { data: apiCurrentRun } = yield octokit.rest.actions.getWorkflowRun(Object.assign(Object.assign({}, repo), { run_id: github.context.runId }));
+        let apiCurrentRun = null;
+        try {
+            const res = yield octokit.rest.actions.getWorkflowRun(Object.assign(Object.assign({}, repo), { run_id: github.context.runId }));
+            apiCurrentRun = res.data;
+        }
+        catch (error) {
+            core.warning(error);
+            yield exitSuccess({
+                shouldSkip: false,
+                reason: 'no_transferable_run'
+            });
+        }
         const currentTreeHash = (_a = apiCurrentRun.head_commit) === null || _a === void 0 ? void 0 : _a.tree_id;
         if (!currentTreeHash) {
             exitFail(`
