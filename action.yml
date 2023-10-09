@@ -31,7 +31,7 @@ inputs:
   do_not_skip:
     description: 'A JSON-array with triggers that should never be skipped'
     required: false
-    default: '["workflow_dispatch", "schedule"]'
+    default: '["workflow_dispatch", "schedule", "merge_group"]'
   concurrent_skipping:
     description: 'One of never, same_content, same_content_newer, outdated_runs, always'
     required: true

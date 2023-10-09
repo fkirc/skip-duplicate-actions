@@ -135,9 +135,9 @@ If true, skip if an already finished duplicate run can be found.
 
 A JSON-array with triggers that should never be skipped.
 
-Possible values are `pull_request`, `push`, `workflow_dispatch`, `schedule`, `release`.
+Possible values are `pull_request`, `push`, `workflow_dispatch`, `schedule`, `release`, `merge_group`.
 
-**Default:** `'["workflow_dispatch", "schedule"]'`
+**Default:** `'["workflow_dispatch", "schedule", "merge_group"]'`
 
 ### `concurrent_skipping`
 
@@ -235,6 +235,7 @@ To minimize changes to existing jobs, it is often easier to skip entire jobs.
 >
 > - You may need to use [`fromJSON`](https://docs.github.com/en/actions/learn-github-actions/expressions#fromjson) to access properties of object outputs. For example, for `skipped_by.id`, you can use the expression: `${{ fromJSON(steps.skip_check.outputs.skipped_by).id }}`.
 > - For GitHub repositories where [default permissions](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository#setting-the-permissions-of-the-github_token-for-your-repository) for `GITHUB_TOKEN` has been set to "permissive (read-only)", the following lines must be included in the workflow (see [permissions syntax](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#permissions)):
+>
 >   ```yaml
 >   # Minimum permissions required by skip-duplicate-actions
 >   permissions:
@@ -408,14 +409,15 @@ stateDiagram-v2
 
 ### How to Use Skip Check With Required Matrix Jobs?
 
-Discussed in https://github.com/fkirc/skip-duplicate-actions/issues/44.
+Discussed in <https://github.com/fkirc/skip-duplicate-actions/issues/44>.
 
 If you have matrix jobs that are registered as required status checks and the matrix runs conditionally based on the skip check, you might run into the problem that the pull request remains in a unmergable state forever because the jobs are not executed at all and thus not reported as skipped (`Expected - Waiting for status to be reported`).
 
 There are several approaches to circumvent this problem:
 
-- Define the condition (`if`) in each step in the matrix job instead of a single condition on the job level: https://github.com/fkirc/skip-duplicate-actions/issues/44
+- Define the condition (`if`) in each step in the matrix job instead of a single condition on the job level: <https://github.com/fkirc/skip-duplicate-actions/issues/44>
 - If you want the check to be considered successful only if all jobs in the matrix were successful, you can add a subsequent job whose only task is to report the final status of the matrix. Then you can register this final job as a required status check:
+
   ```yaml
   result:
     name: Result
@@ -429,6 +431,7 @@ There are several approaches to circumvent this problem:
         if: needs.example-matrix-job.result != 'success'
         run: exit 1
   ```
+
 - Define an opposite workflow, as offically suggested by GitHub: [Handling skipped but required checks](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks)
 
 ## Maintainers
