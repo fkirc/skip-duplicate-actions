@@ -55,7 +55,8 @@ const workflowRunTriggerOptions = [
     'push',
     'workflow_dispatch',
     'schedule',
-    'release'
+    'release',
+    'merge_group'
 ];
 const concurrentSkippingOptions = [
     'always',
