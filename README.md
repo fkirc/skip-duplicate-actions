@@ -298,7 +298,7 @@ jobs:
 ### Example 3: Skip using `paths_filter`
 
 > [!WARNING]  
-> If the paths_filter option is not working correctly, then you could copy the “example 1" multiple times according to your needs (see #326 for details).
+> If the paths_filter option is not working correctly, then you could copy the “example 1" multiple times according to your needs (see <https://github.com/fkirc/skip-duplicate-actions/issues/326> for details).
 
 
 The `paths_filter` option can be used if you have multiple jobs in a workflow and want to skip them based on different [`paths_ignore`](#paths_ignore) / [`paths`](#paths) patterns. When defining such filters, the action returns corresponding information in the [`paths_result`](#paths_result) output.
