@@ -332,7 +332,7 @@ jobs:
     # If 'skip-duplicate-actions' terminates before the paths checks are performed (for example, when a successful duplicate run has
     # been found) 'paths_result' outputs an empty object ('{}'). This can be easily intercepted in the if condition of a job
     # by checking the result of the "global" 'should_skip' output first.
-    if: needs.pre_job.outputs.should_skip != 'true' || !fromJSON(needs.pre_job.outputs.paths_result).frontend.should_skip
+    if: needs.pre_job.outputs.should_skip != 'true' && !fromJSON(needs.pre_job.outputs.paths_result).frontend.should_skip
     # ...
 
   backend:
