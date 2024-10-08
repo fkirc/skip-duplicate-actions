@@ -36,6 +36,7 @@ jobs:
           concurrent_skipping: 'never'
           skip_after_successful_duplicate: 'true'
           paths_ignore: '["**/README.md", "**/docs/**"]'
+          skip_summary: 'true'
 
   main_job:
     needs: pre_job
