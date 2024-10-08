@@ -36,6 +36,10 @@ inputs:
     description: 'One of never, same_content, same_content_newer, outdated_runs, always'
     required: true
     default: 'never'
+  skip_summary:
+    description: 'If true, make the workflow logs shorter'
+    required: false
+    default: 'false'
 outputs:
   should_skip:
     description: 'Returns true if the current run should be skipped according to your configured rules'
