@@ -2,13 +2,14 @@
   "name": "skip-duplicate-actions",
   "private": true,
   "main": "lib/main.js",
+  "packageManager": "pnpm@9.15.0",
   "scripts": {
     "build": "tsc",
     "format": "prettier --write 'src/**/*.ts'",
     "format-check": "prettier --check 'src/**/*.ts'",
     "lint": "eslint src/**/*.ts",
     "package": "ncc build",
-    "all": "npm run build && npm run format && npm run lint && npm run package"
+    "all": "pnpm run build && pnpm run format && pnpm run lint && pnpm run package"
   },
   "repository": {
     "type": "git",

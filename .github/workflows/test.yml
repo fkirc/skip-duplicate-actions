@@ -15,11 +15,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: pnpm
+
       - name: Install dependencies
-        run: npm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: npm run all
+        run: pnpm run all
 
   pre_job: # Make sure the action works on a clean machine without building
     runs-on: ubuntu-latest
