@@ -301,12 +301,18 @@ class SkipDuplicateActions {
         return matches;
     }
     fetchCommitDetails(sha) {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             if (!sha) {
                 return null;
             }
             try {
-                return (yield this.context.octokit.rest.repos.getCommit(Object.assign(Object.assign({}, this.context.repo), { ref: sha }))).data;
+                const res = yield this.context.octokit.rest.repos.getCommit(Object.assign(Object.assign({}, this.context.repo), { ref: sha }));
+                if ((_a = res.headers.link) === null || _a === void 0 ? void 0 : _a.includes('rel="next"')) {
+                    core.warning(`Commit ${sha} has too many changed files for path filtering`);
+                    return null;
+                }
+                return res.data;
             }
             catch (error) {
                 if (error instanceof Error || typeof error === 'string') {

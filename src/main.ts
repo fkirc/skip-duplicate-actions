@@ -431,12 +431,17 @@ class SkipDuplicateActions {
       return null
     }
     try {
-      return (
-        await this.context.octokit.rest.repos.getCommit({
-          ...this.context.repo,
-          ref: sha
-        })
-      ).data
+      const res = await this.context.octokit.rest.repos.getCommit({
+        ...this.context.repo,
+        ref: sha
+      })
+      if (res.headers.link?.includes('rel="next"')) {
+        core.warning(
+          `Commit ${sha} has too many changed files for path filtering`
+        )
+        return null
+      }
+      return res.data
     } catch (error) {
       if (error instanceof Error || typeof error === 'string') {
         core.warning(error)
