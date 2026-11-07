@@ -228,8 +228,8 @@ class SkipDuplicateActions {
                 iterSha = ((_a = commit.parents) === null || _a === void 0 ? void 0 : _a.length) ? (_b = commit.parents[0]) === null || _b === void 0 ? void 0 : _b.sha : null;
                 const changedFiles = commit.files
                     ? commit.files
-                        .map(file => file.filename)
-                        .filter(file => typeof file === 'string')
+                        .flatMap(file => [file.filename, file.previous_filename])
+                        .filter((file) => typeof file === 'string')
                     : [];
                 allChangedFiles.push({
                     sha: commit.sha,

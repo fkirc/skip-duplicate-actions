@@ -314,8 +314,8 @@ class SkipDuplicateActions {
       iterSha = commit.parents?.length ? commit.parents[0]?.sha : null
       const changedFiles = commit.files
         ? commit.files
-            .map(file => file.filename)
-            .filter(file => typeof file === 'string')
+            .flatMap(file => [file.filename, file.previous_filename])
+            .filter((file): file is string => typeof file === 'string')
         : []
       allChangedFiles.push({
         sha: commit.sha,
@@ -616,7 +616,7 @@ async function exitSuccess(args: {
     )
   }
   summary.push('</table>')
-  const skipSummary = core.getBooleanInput("skip_summary")
+  const skipSummary = core.getBooleanInput('skip_summary')
   if (!skipSummary) {
     await core.summary.addRaw(summary.join('')).write()
   }
