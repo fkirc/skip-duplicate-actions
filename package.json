@@ -9,7 +9,8 @@
     "format-check": "prettier --check 'src/**/*.ts'",
     "lint": "eslint src/**/*.ts",
     "package": "ncc build",
-    "all": "pnpm run build && pnpm run format && pnpm run lint && pnpm run package"
+    "test": "node --test __tests__/*.test.cjs",
+    "all": "pnpm run build && pnpm run format && pnpm run lint && pnpm run package && pnpm run test"
   },
   "repository": {
     "type": "git",
