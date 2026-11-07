@@ -62,6 +62,12 @@ type PathsFilter = Record<
   }
 >
 
+type CommitDetails = {
+  commit: ApiCommit
+  /** True if the changed files of the commit are paginated and the response does not contain all of them. */
+  hasMoreFiles: boolean
+}
+
 type PathsResult = Record<
   string,
   {
@@ -287,7 +293,6 @@ class SkipDuplicateActions {
     pathsResult: PathsResult
     changedFiles: ChangedFiles
   }> {
-    let commit: ApiCommit | null
     let iterSha: string | null = this.context.currentRun.commitHash
     let distanceToHEAD = 0
     const allChangedFiles: ChangedFiles = []
@@ -307,10 +312,14 @@ class SkipDuplicateActions {
     }
 
     do {
-      commit = await this.fetchCommitDetails(iterSha)
-      if (!commit) {
+      const commitDetails: CommitDetails | null = await this.fetchCommitDetails(
+        iterSha
+      )
+      if (!commitDetails) {
         break
       }
+      const commit: ApiCommit = commitDetails.commit
+      const hasMoreFiles = commitDetails.hasMoreFiles
       iterSha = commit.parents?.length ? commit.parents[0]?.sha : null
       const changedFiles = commit.files
         ? commit.files
@@ -352,6 +361,17 @@ class SkipDuplicateActions {
           pathsResult[name].backtrack_count = distanceToHEAD
           core.info(
             `Stop backtracking for '${name}' because the defined limit has been reached`
+          )
+          continue
+        }
+
+        // The changed files of this commit are paginated, so we only know a subset of them.
+        // Bail out instead of risking a wrong skip based on an incomplete file list.
+        if (hasMoreFiles) {
+          pathsResult[name].should_skip = false
+          pathsResult[name].backtrack_count = distanceToHEAD
+          core.warning(
+            `Stop backtracking for '${name}' at commit ${commit.html_url} because it changes more files than returned by a single GitHub API response; path filtering is not supported for such large commits, so this workflow will not be skipped`
           )
           continue
         }
@@ -426,17 +446,21 @@ class SkipDuplicateActions {
     return matches
   }
 
-  async fetchCommitDetails(sha: string | null): Promise<ApiCommit | null> {
+  async fetchCommitDetails(sha: string | null): Promise<CommitDetails | null> {
     if (!sha) {
       return null
     }
     try {
-      return (
-        await this.context.octokit.rest.repos.getCommit({
-          ...this.context.repo,
-          ref: sha
-        })
-      ).data
+      const res = await this.context.octokit.rest.repos.getCommit({
+        ...this.context.repo,
+        ref: sha
+      })
+      // According to the GitHub docs, the list of changed files is paginated if a commit changes more than 300 files.
+      // A paginated response includes a `link` header with `rel="next"` if there are more pages.
+      // See https://docs.github.com/en/rest/commits/commits#get-a-commit
+      // and https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api#using-link-headers
+      const hasMoreFiles = !!res.headers.link?.includes('rel="next"')
+      return {commit: res.data, hasMoreFiles}
     } catch (error) {
       if (error instanceof Error || typeof error === 'string') {
         core.warning(error)
@@ -611,7 +635,7 @@ async function exitSuccess(args: {
     )
   }
   summary.push('</table>')
-  const skipSummary = core.getBooleanInput("skip_summary")
+  const skipSummary = core.getBooleanInput('skip_summary')
   if (!skipSummary) {
     await core.summary.addRaw(summary.join('')).write()
   }

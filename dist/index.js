@@ -207,7 +207,6 @@ class SkipDuplicateActions {
     backtracePathSkipping() {
         var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
-            let commit;
             let iterSha = this.context.currentRun.commitHash;
             let distanceToHEAD = 0;
             const allChangedFiles = [];
@@ -221,10 +220,12 @@ class SkipDuplicateActions {
                 pathsResult[name] = { should_skip: 'unknown', backtrack_count: 0 };
             }
             do {
-                commit = yield this.fetchCommitDetails(iterSha);
-                if (!commit) {
+                const commitDetails = yield this.fetchCommitDetails(iterSha);
+                if (!commitDetails) {
                     break;
                 }
+                const commit = commitDetails.commit;
+                const hasMoreFiles = commitDetails.hasMoreFiles;
                 iterSha = ((_a = commit.parents) === null || _a === void 0 ? void 0 : _a.length) ? (_b = commit.parents[0]) === null || _b === void 0 ? void 0 : _b.sha : null;
                 const changedFiles = commit.files
                     ? commit.files
@@ -257,6 +258,14 @@ class SkipDuplicateActions {
                         pathsResult[name].should_skip = false;
                         pathsResult[name].backtrack_count = distanceToHEAD;
                         core.info(`Stop backtracking for '${name}' because the defined limit has been reached`);
+                        continue;
+                    }
+                    // The changed files of this commit are paginated, so we only know a subset of them.
+                    // Bail out instead of risking a wrong skip based on an incomplete file list.
+                    if (hasMoreFiles) {
+                        pathsResult[name].should_skip = false;
+                        pathsResult[name].backtrack_count = distanceToHEAD;
+                        core.warning(`Stop backtracking for '${name}' at commit ${commit.html_url} because it changes more files than returned by a single GitHub API response; path filtering is not supported for such large commits, so this workflow will not be skipped`);
                         continue;
                     }
                     // Ignorable if all changed files match against ignored paths.
@@ -301,12 +310,19 @@ class SkipDuplicateActions {
         return matches;
     }
     fetchCommitDetails(sha) {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             if (!sha) {
                 return null;
             }
             try {
-                return (yield this.context.octokit.rest.repos.getCommit(Object.assign(Object.assign({}, this.context.repo), { ref: sha }))).data;
+                const res = yield this.context.octokit.rest.repos.getCommit(Object.assign(Object.assign({}, this.context.repo), { ref: sha }));
+                // According to the GitHub docs, the list of changed files is paginated if a commit changes more than 300 files.
+                // A paginated response includes a `link` header with `rel="next"` if there are more pages.
+                // See https://docs.github.com/en/rest/commits/commits#get-a-commit
+                // and https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api#using-link-headers
+                const hasMoreFiles = !!((_a = res.headers.link) === null || _a === void 0 ? void 0 : _a.includes('rel="next"'));
+                return { commit: res.data, hasMoreFiles };
             }
             catch (error) {
                 if (error instanceof Error || typeof error === 'string') {
