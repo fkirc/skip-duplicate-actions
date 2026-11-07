@@ -367,7 +367,6 @@ PR-diffs are simple to understand, but they only work after opening a PR, not im
 This option is implemented by `skip-duplicate-actions`.
 An advantage is that this works regardless of whether you are using PRs or raw feature-branches, and of course it also works for "required" checks.
 Internally, `skip-duplicate-actions` uses the [Repos Commit API](https://docs.github.com/en/rest/reference/repos#get-a-commit) to perform an efficient backtracking-algorithm for paths-skipping-detection.
-If a commit changes so many files that the API paginates its file list (more than 300 files), `skip-duplicate-actions` emits a warning and does not skip based on paths, since it cannot see all changed files.
 
 This is how the algorithm works approximately:
 
