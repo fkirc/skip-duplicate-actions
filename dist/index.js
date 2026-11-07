@@ -453,7 +453,7 @@ function exitSuccess(args) {
             summary.push('<tr>', '<td>Changed Files</td>', `<td>${changedFiles}</td>`, '</tr>');
         }
         summary.push('</table>');
-        const skipSummary = core.getBooleanInput("skip_summary");
+        const skipSummary = core.getBooleanInput('skip_summary');
         if (!skipSummary) {
             yield core.summary.addRaw(summary.join('')).write();
         }
