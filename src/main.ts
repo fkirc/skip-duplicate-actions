@@ -271,6 +271,7 @@ class SkipDuplicateActions {
       const concurrentIsOlder = concurrentRuns.find(
         run =>
           run.treeHash === this.context.currentRun.treeHash &&
+          run.commitHash === this.context.currentRun.commitHash &&
           run.runNumber < this.context.currentRun.runNumber
       )
       if (concurrentIsOlder) {
