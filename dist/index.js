@@ -196,6 +196,7 @@ class SkipDuplicateActions {
         }
         else if (this.inputs.concurrentSkipping === 'same_content_newer') {
             const concurrentIsOlder = concurrentRuns.find(run => run.treeHash === this.context.currentRun.treeHash &&
+                run.commitHash === this.context.currentRun.commitHash &&
                 run.runNumber < this.context.currentRun.runNumber);
             if (concurrentIsOlder) {
                 core.info(`Skip execution because the exact same files are concurrently checked in older run ${concurrentIsOlder.htmlUrl}`);
